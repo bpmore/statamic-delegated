@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Bpmore\StatamicDelegated\Tests;
 
 use Bpmore\StatamicDelegated\ServiceProvider;
+use Statamic\Contracts\Auth\RoleRepository;
+use Statamic\Contracts\Auth\UserGroupRepository;
 use Statamic\Testing\AddonTestCase;
 use Statamic\Testing\Concerns\PreventsSavingStacheItemsToDisk;
 
@@ -22,4 +24,18 @@ abstract class TestCase extends AddonTestCase
     use PreventsSavingStacheItemsToDisk;
 
     protected string $addonServiceProvider = ServiceProvider::class;
+
+    /**
+     * AddonTestCase sandboxes users into the fake Stache directory, but roles
+     * and groups are YAML files the repositories read from resource_path(),
+     * which under Testbench is inside vendor/. Point them at the same
+     * directory, which is wiped after every test.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        app(RoleRepository::class)->path($this->fakeStacheDirectory.'/roles.yaml');
+        app(UserGroupRepository::class)->path($this->fakeStacheDirectory.'/groups.yaml');
+    }
 }

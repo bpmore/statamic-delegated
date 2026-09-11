@@ -20,7 +20,7 @@
 - [x] Territory resolution service with caching, unit-tested, no CP booted
 
 ## Phase 2 — Escalation invariants (tests before features)
-- [ ] Cannot grant a role they do not hold
+- [x] Cannot grant a role they do not hold — written failing, parked as `todo` until 2.7
 - [ ] Cannot add a user to a territory they do not administer
 - [ ] Cannot edit, demote or delete a super user
 - [ ] Cannot create or modify roles
@@ -423,3 +423,35 @@ Not here yet, on purpose: building `ContentFacts` from a Statamic `Entry` (needs
 collection, terms, site — Phase 3), the per-driver predicate compiler (Phase 3.1), and any
 write path (territories and assignments are still inserted by hand; whoever writes must call
 `invalidate()` — Phase 4 will wrap that).
+
+### Phase 2 — approach, and invariant 1 (2026-09-11)
+
+**How "tests before features" is squared with "never stop with a red suite".** Each invariant is
+written as real Pest tests, run once *un-marked* to prove it fails against the current code (the
+failure is recorded here), then parked with Pest's `->todo()`, which does not execute the body and
+keeps `pest --ci` green (`--ci` only forbids `->only()`). Task 2.7 un-parks all six, shows them
+failing together, then implements until they pass. `todo` rather than `skip` because that is what
+they are; the un-marked run guards against a typo in a body that would otherwise never execute.
+
+**The contract the tests are written against** (`src/Administration/`, no implementation bound):
+`Actor` (user id, super flag, roles held directly *or via groups* — Statamic's own meaning of
+"holds" — and the subjects membership resolves from); `EscalationDenied` with one named
+constructor per invariant and a public `$invariant` so a test asserts *which* rule refused;
+`TerritoryAdministration` interface with `addMember`, `removeMember`, `setRoles`, `updateUser`,
+`deleteUser`, `updateTerritory`, `visibleUsers` — and deliberately **no** create/modify-role
+operation (invariant 4 starts as an absence in the surface). Every method does the whole thing or
+throws before writing.
+
+**Harness:** `tests/Support/Site` builds roles/groups/users (sandboxed Stache; roles/groups YAML
+repointed into `tests/__fixtures__/dev-null` by `TestCase`, wiped per test) and territories/
+assignments (in-memory DB, resolver invalidated on every write). `SiteFixtureTest` pins the harness
+so a denial can never pass because a fixture silently failed to save.
+
+**Invariant 1 — cannot grant a role they do not hold** (`CannotGrantRoleNotHeldTest`, 9 tests):
+happy path (held role → granted, assignment written); not-held → `EscalationDenied::ROLE_NOT_HELD`
+and *nothing* written; mixed held+not-held → refused whole (no partial grant); `setRoles` on an
+existing member → refused; the admin giving *themselves* a role → refused; held via group → held;
+group's role without being in the group → not held; a non-existent role → refused (never
+"harmless"); super user → exempt. Un-marked run: **9 failed** —
+`BindingResolutionException: Target [TerritoryAdministration] is not instantiable` — i.e. failing
+because the feature does not exist, which is the point.
