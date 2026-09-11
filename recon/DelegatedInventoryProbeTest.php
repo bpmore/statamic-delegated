@@ -192,7 +192,6 @@ class DelegatedInventoryProbeTest extends TestCase
 
     // ------------------------------------------------------------ surfaces
 
-
     public function test_entry_listing()
     {
         $this->log('sanity', '-', 'onc uri='.Entry::find('onc')->uri().' chemo uri='.Entry::find('chemo')->uri().' blueprint='.Entry::find('onc')->blueprint()->handle().' hasAuthor='.var_export(Entry::find('onc')->blueprint()->hasField('author'), true));
@@ -202,7 +201,6 @@ class DelegatedInventoryProbeTest extends TestCase
         $r = $this->actingAs($this->member())->getJson('/cp/collections/pages/entries');
         $this->log('listing', 'member', $r->status().' rows='.count($r->json('data') ?? []).' total='.($r->json('meta.total') ?? '?').' => '.$this->titles($r->json()));
     }
-
 
     public function test_entry_edit_screen_and_direct_url()
     {
@@ -230,7 +228,6 @@ class DelegatedInventoryProbeTest extends TestCase
         $this->log('direct-url', 'viewer', $r->status().' cp/edit/{id} -> '.($r->headers->get('Location') ?? '-'));
     }
 
-
     public function test_entry_update_publish_and_delete_endpoints()
     {
         $r = $this->actingAs($this->member())->patchJson('/cp/collections/pages/entries/onc', ['title' => 'Hacked', 'slug' => 'onc']);
@@ -244,7 +241,6 @@ class DelegatedInventoryProbeTest extends TestCase
         $r = $this->actingAs($this->member())->postJson('/cp/collections/pages/entries/onc/unpublish', []);
         $this->log('unpublish', 'member', $r->status().' POST unpublish oncology');
     }
-
 
     public function test_bulk_actions()
     {
@@ -295,7 +291,6 @@ class DelegatedInventoryProbeTest extends TestCase
         $this->log('bulk-run', 'viewer', $r->status().' unpublish oncology');
     }
 
-
     public function test_structure_tree_view()
     {
         $r = $this->actingAs($this->viewer())->getJson('/cp/collections/pages/tree');
@@ -337,7 +332,6 @@ class DelegatedInventoryProbeTest extends TestCase
         $this->log('reorder', 'member', $r->status().' flat reorder incl. oncology'.$this->err($r));
     }
 
-
     public function test_global_search_and_command_palette()
     {
         Search::index('cp')->update();
@@ -360,7 +354,6 @@ class DelegatedInventoryProbeTest extends TestCase
         $this->log('listing-search', 'member', $r->status().' '.$this->titles($r->json()));
     }
 
-
     public function test_rest_api_and_graphql_are_userless()
     {
         $r = $this->getJson('/api/collections/pages/entries');
@@ -378,7 +371,6 @@ class DelegatedInventoryProbeTest extends TestCase
         $this->log('graphql', 'anon', $r->status().' status:any -> '.($rows ?: substr($r->getContent(), 0, 100)));
     }
 
-
     public function test_live_preview()
     {
         $r = $this->actingAs($this->viewer())->postJson('/cp/collections/pages/entries/onc/preview', ['preview' => ['title' => 'x']]);
@@ -393,7 +385,6 @@ class DelegatedInventoryProbeTest extends TestCase
         $r = $this->actingAs($this->member())->get('/cp/collections/pages/entries/onc/preview');
         $this->log('live-preview', 'member', $r->status().' GET popout shell oncology');
     }
-
 
     public function test_revisions()
     {
@@ -415,7 +406,6 @@ class DelegatedInventoryProbeTest extends TestCase
         $r = $this->actingAs($this->member())->getJson('/cp/collections/pages/entries/card/revisions');
         $this->log('revisions', 'member', $r->status().' index cardiology');
     }
-
 
     public function test_navigation_editing()
     {
@@ -456,7 +446,6 @@ class DelegatedInventoryProbeTest extends TestCase
         $this->log('nav-page-edit', 'member', $r->status().' edit nav page linked to oncology');
     }
 
-
     public function test_relationship_fieldtype_picker()
     {
         $config = base64_encode(json_encode(['type' => 'entries', 'collections' => ['pages']]));
@@ -470,7 +459,6 @@ class DelegatedInventoryProbeTest extends TestCase
         $r = $this->actingAs($this->member())->postJson('/cp/fieldtypes/relationship/data', ['config' => $config, 'selections' => ['onc', 'card']]);
         $this->log('entries-picker-data', 'member', $r->status().' '.json_encode(collect($r->json('data'))->map(fn ($i) => ($i['title'] ?? '?').(isset($i['invalid']) && $i['invalid'] ? '(invalid)' : ''))->all()));
     }
-
 
     public function test_create_entry_under_out_of_territory_parent()
     {

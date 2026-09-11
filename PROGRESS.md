@@ -14,7 +14,7 @@
 - [x] Do not write an enforcement check until all three are in Notes
 
 ## Phase 1 — Foundations
-- [ ] Scaffold; confirm `statamic/cms: ^6.0` (pinned to a tested range, not open-ended) and `php: ^8.2`
+- [x] Scaffold; confirm `statamic/cms: ^6.0` (pinned to a tested range, not open-ended) and `php: ^8.2`
 - [ ] `SECURITY.md` with a contact and stated response time — before any listing exists
 - [ ] Migrations: `delegated_territories`, `delegated_assignments`, `delegated_audit`
 - [ ] Territory resolution service with caching, unit-tested, no CP booted
@@ -288,3 +288,28 @@ silent over-grant, which is the exact failure class this product exists to preve
   confirmed to collapse on flat file with the naive form.
 
 Phase 0 is complete: all three prerequisites for writing an enforcement check are in Notes.
+
+### Phase 1.1 — Scaffold (2026-09-11)
+
+Hand-scaffolded to match the sibling `bpmore/statamic-lifecycle` layout rather than `make:addon`,
+which scaffolds PHPUnit inside the host's `addons/` directory. Namespace `Bpmore\StatamicDelegated`,
+slug `delegated`, Pest on `Statamic\Testing\AddonTestCase` with `PreventsSavingStacheItemsToDisk`,
+Pint (laravel preset), an arch test (strict types, no debug calls), a CI workflow with the PHP axis
+only (the `statamic/cms` minor axis is Phase 5), `LICENSE.md` with a plain-words scope section
+(control panel only; APIs and front end untouched; verified versions only; super users and
+`configure collections` bypass), a pre-release `README.md`, and `CHANGELOG.md`.
+
+- **Pin: `statamic/cms: ~6.31.0`.** 6.31.0 is the only version anything has been verified
+  against (all of Phase 0). Widen per minor as CI proves it; `tests/Feature/AddonTest.php` fails
+  if the constraint drifts back to `^6.x` or loses its lower-bound form. Resolved here:
+  cms 6.31.0, Laravel 13.31.0, Testbench 11.2.0, Pest 3.8.7, on PHP 8.4. `php: ^8.2` as specified.
+- **Host wiring:** path repository `../statamic-delegated` + `bpmore/statamic-delegated: @dev`
+  in the host's `composer.json`, symlinked; `Addon::get()` resolves name/slug in the host and the
+  host stays on cms 6.31.0.
+- `AddonTestCase` requires `tests/__fixtures__/dev-null/` to exist (it derives the fake Stache
+  path from the provider's file and `mkdir`s inside it) — committed with a `.gitkeep`.
+- `Statamic::version()` throws under Testbench (shells out to Composer in the skeleton app,
+  which has no lock file). Use `Composer\InstalledVersions::getPrettyVersion('statamic/cms')`.
+- No JS/Vite scaffold yet: nothing to build until the first CP screen (Phase 4). CLAUDE.md
+  updated to say so; the "not yet scaffolded" paragraph removed.
+- `composer.lock` is committed (CI runs `composer update` per PHP version, as the sibling does).

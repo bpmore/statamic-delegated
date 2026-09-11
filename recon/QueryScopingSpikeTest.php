@@ -24,6 +24,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Bootstrap\RegisterProviders;
 use Statamic\Contracts\Auth\RoleRepository;
 use Statamic\Contracts\Auth\UserGroupRepository;
+use Statamic\Eloquent\Entries\UuidEntryModel;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Role;
@@ -57,7 +58,7 @@ class QueryScopingSpikeTest extends TestCase
             $app->beforeBootstrapping(RegisterProviders::class, function ($app) {
                 $app['config']->set('statamic.eloquent-driver.entries', [
                     'driver' => 'eloquent',
-                    'model' => \Statamic\Eloquent\Entries\UuidEntryModel::class,
+                    'model' => UuidEntryModel::class,
                     'entry' => \Statamic\Eloquent\Entries\Entry::class,
                     'map_data_to_columns' => false,
                 ]);

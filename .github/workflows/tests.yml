@@ -1,0 +1,59 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Spec §7 asks for a matrix axis on statamic/cms minor versions as well as PHP.
+# That axis is added in Phase 5, once there is more than one verified minor;
+# until then the pinned constraint in composer.json is the whole tested range.
+jobs:
+  tests:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pdo_sqlite, sqlite3
+          coverage: none
+
+      # `update`, not `install`: the committed lock file was resolved on the
+      # newest PHP, where Laravel 13 is chosen. On 8.2 Laravel 13 cannot be
+      # installed, so each PHP version resolves its own set.
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-interaction --no-progress
+
+      # This addon targets Statamic 6. Anything else resolving is a bug in the
+      # constraints, and building against it would be building the wrong thing.
+      - name: Confirm Statamic 6 resolved
+        run: composer show statamic/cms | grep -E '^versions\s*:\s*\* v6\.'
+
+      - name: Tests
+        run: vendor/bin/pest --ci
+
+  lint:
+    name: Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Pint
+        run: vendor/bin/pint --test

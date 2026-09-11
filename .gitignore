@@ -1,5 +1,12 @@
-# Written by run-build.sh
-build-log.jsonl
+/vendor/
+/node_modules/
+/.phpunit.cache/
+/.pest/
+/.claude/settings.local.json
+.DS_Store
 
-# Created (and normally removed) by recon/DelegatedInventoryProbeTest.php
-recon/fixtures/
+# Written by run-build.sh
+/build-log.jsonl
+
+# Created (and normally removed) by the recon probes
+/recon/fixtures/

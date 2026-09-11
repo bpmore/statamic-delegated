@@ -31,7 +31,8 @@ when run with `SPIKE_DRIVER=eloquent`. Do not publish the driver's config into t
 
 - Tests, from this repo: `vendor/bin/pest`
 - Formatting, from this repo: `vendor/bin/pint`
-- Control panel assets, from this repo: `npm install && npm run build`
+- Control panel assets, from this repo: `npm install && npm run build` — not scaffolded yet;
+  arrives with the first CP screen (Phase 4)
 - Statamic commands run from the host site, never here:
   `cd /Users/bpmore/Herd/statamic-dev && php please <command>`
 - After changing `composer.json` here:
@@ -44,11 +45,6 @@ This addon's test suite uses **Pest**. Statamic's `make:addon` scaffolds
 PHPUnit and a `TestCase` extending `Statamic\Testing\AddonTestCase` (built on Orchestra
 Testbench). Keep extending `AddonTestCase` whichever runner is used.
 
-
-> **Current state — this paragraph disappears once the addon is scaffolded.**
-> The addon skeleton does not exist yet: no `composer.json`, no `vendor/`, no
-> `package.json`. Building it is task 1 in `PROGRESS.md`, and none of the commands above
-> will work until that task is done. That is expected, not a broken environment.
 
 ## Working agreement for unattended runs
 
