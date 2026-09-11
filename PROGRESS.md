@@ -17,7 +17,7 @@
 - [x] Scaffold; confirm `statamic/cms: ^6.0` (pinned to a tested range, not open-ended) and `php: ^8.2`
 - [x] `SECURITY.md` with a contact and stated response time — before any listing exists
 - [x] Migrations: `delegated_territories`, `delegated_assignments`, `delegated_audit`
-- [ ] Territory resolution service with caching, unit-tested, no CP booted
+- [x] Territory resolution service with caching, unit-tested, no CP booted
 
 ## Phase 2 — Escalation invariants (tests before features)
 - [ ] Cannot grant a role they do not hold
@@ -368,3 +368,58 @@ host with `php artisan migrate` (batch 2). Decisions beyond spec §6's column li
 - `php please migrate` in the host fails with "missing: timezone" — `please` prefixes
   `statamic:` and Symfony abbreviation-matches `migrate` to `statamic:migrate-dates-to-utc`.
   Use `php artisan migrate`. Added to CLAUDE.md.
+
+### Phase 1.4 — Territory resolution service (2026-09-11)
+
+`src/Territories/` is a framework-free core (arch-tested: no Statamic/Illuminate/Laravel/Carbon
+reference allowed): `ScopeType`, `Level`, `Normalise`, `ContentFacts`, `Territory`, `Assignment`,
+`Membership`, and `TerritoryMap` — the "territory tree in memory" of spec §6. `src/Resolution/` is
+the framework side: `TerritorySource` (interface), `DatabaseTerritorySource` (two plain reads, no
+joins), and `TerritoryResolver` (the singleton with the cache). 21 unit tests run in 30 ms with no
+application; 11 feature tests cover the DB and the caching contract. Resolver boots in the host.
+
+**Semantics decided here (spec §4 left them open):**
+
+- **Two questions, one source.** `containing(facts)` → territories covering the content, most
+  specific first; `owner()` = first, `null` = site default (nobody but super). `membershipFor
+  (subjects)` → territory id ⇒ level. The policy layer and the query compiler will both ask the
+  same map, so they cannot disagree — the Phase 0 requirement.
+- **Precedence when several territories contain one entry:** structure branch (deepest URI
+  prefix) → taxonomy term → collection. Branch first because the tree is where content *lives*; a
+  term is a field an editor could change to hand content to another department. Encoded in
+  `ScopeType::precedence()` and `Territory::specificity()`.
+- **"Walks up until it finds an owning territory"** = take the deepest matching branch prefix;
+  a branch territory covers its whole sub-tree including any sub-territories' branches. A
+  sub-territory exists to give a narrower group access to a narrower area, not to shadow the
+  parent's members.
+- **Membership flows down the hierarchy (`parent_id`), never up**, at the same level: a
+  department's admin administers its sub-units. Union across subjects (a user in two departments
+  is in both — spec §11). Where two routes reach one territory the higher level wins.
+- **Orphans (`uri === null`) are under no branch** — they belong to nobody, never to everybody.
+  This is the property that closes the Phase 0.1 duplicate-entry exfiltration; tested explicitly.
+- **Sibling prefixes never match** (`/cardiology` ≠ `/cardiology-alumni`); a root branch `/`
+  covers every entry that has a URI; comparisons are case-insensitive and trailing-slash-blind
+  after `Normalise` (the Phase 0.3 case finding — normalised on *both* sides, at store and at
+  compare, so a hand-edited row still works).
+- Territories are site-bound whatever their scope; a dangling `parent_id` is a root; an
+  assignment to a non-existent territory grants nothing; parent-chain cycles cannot hang a request.
+
+**Caching, and one deviation from spec §6.** The spec says "user's effective territories cached
+per session, invalidated on assignment change". Implemented instead as: the *whole map*
+(territories + assignments — hundreds of rows at most) cached under a version-stamped key
+(`delegated.territories.map.v{n}`), memoised per request in a `delegated` Blink store, with
+membership computed per call from the map (hash lookups). `invalidate()` bumps the version —
+one counter, no key scanning, invalidates every process at once. Reasons: (a) a user's *groups*
+are Statamic's data and change without telling us; keeping them as an input at compute time
+means a Statamic-side group edit can never be served stale, where a per-session cache of
+"effective territories" would be; (b) one cache entry to reason about instead of one per user.
+Measured: 200 rows × (owner + membership) = **2 queries**; the next request = **0 queries**.
+The TTL (`delegated.cache.ttl`, default 3600 s, `null` = until next change) is only a backstop
+for a row edited by hand — tested as such, including that within the TTL such a change is
+invisible by design. Bug found by that test: `?? 3600` turned a configured `null` into an hour;
+fixed with `array_key_exists`.
+
+Not here yet, on purpose: building `ContentFacts` from a Statamic `Entry` (needs `uri()`,
+collection, terms, site — Phase 3), the per-driver predicate compiler (Phase 3.1), and any
+write path (territories and assignments are still inserted by hand; whoever writes must call
+`invalidate()` — Phase 4 will wrap that).
