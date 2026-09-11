@@ -35,6 +35,9 @@ when run with `SPIKE_DRIVER=eloquent`. Do not publish the driver's config into t
   arrives with the first CP screen (Phase 4)
 - Statamic commands run from the host site, never here:
   `cd /Users/bpmore/Herd/statamic-dev && php please <command>`
+- Laravel commands in the host use `artisan`, not `please`: `php artisan migrate`.
+  `php please migrate` abbreviation-matches `statamic:migrate-dates-to-utc` and fails
+  asking for a `timezone`.
 - After changing `composer.json` here:
   `cd /Users/bpmore/Herd/statamic-dev && composer update bpmore/statamic-delegated`
 

@@ -16,6 +16,10 @@
     <php>
         <env name="DB_CONNECTION" value="testing"/>
         <env name="DB_DATABASE" value=":memory:"/>
+        <!-- Testbench's in-memory SQLite defaults this to off. Every real
+             driver enforces foreign keys, so the suite must too, or the
+             cascade and null-on-delete behaviour is never tested. -->
+        <env name="DB_FOREIGN_KEYS" value="true"/>
         <env name="APP_KEY" value="base64:dxjDa8SQiCpoUj/olLlFoHDXcJA64OIkfAO16KmeeVo="/>
     </php>
 </phpunit>

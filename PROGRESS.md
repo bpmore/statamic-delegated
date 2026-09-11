@@ -16,7 +16,7 @@
 ## Phase 1 — Foundations
 - [x] Scaffold; confirm `statamic/cms: ^6.0` (pinned to a tested range, not open-ended) and `php: ^8.2`
 - [x] `SECURITY.md` with a contact and stated response time — before any listing exists
-- [ ] Migrations: `delegated_territories`, `delegated_assignments`, `delegated_audit`
+- [x] Migrations: `delegated_territories`, `delegated_assignments`, `delegated_audit`
 - [ ] Territory resolution service with caching, unit-tested, no CP booted
 
 ## Phase 2 — Escalation invariants (tests before features)
@@ -336,3 +336,35 @@ the advisory channel, an email, and a bolded response time, and that the README 
 - `statamic.dev/security` does not exist (404); Statamic's own policy is linked at
   `github.com/statamic/cms/security/policy` (200).
 - Support line: `main` only until 1.0; then current minor, previous minor for 90 days.
+
+### Phase 1.3 — Migrations (2026-09-11)
+
+Three migrations under `database/migrations`, loaded with `loadMigrationsFrom` and publishable as
+`delegated-migrations`; 14 schema tests in `tests/Feature/MigrationsTest.php` (tables, columns,
+uniques, indexes, cascade, null-on-delete, FK rejection, audit survival, rollback). Applied in the
+host with `php artisan migrate` (batch 2). Decisions beyond spec §6's column list:
+
+- **Default connection, not a private one.** Lifecycle uses its own SQLite file so a flat-file
+  site needs no database; Delegated's rows are authorisation data about the site's own users, and
+  a site with database users keeps both on one connection. Spec §7 already says "database
+  required". A configurable connection can be added later without a schema change.
+- `delegated_territories`: added `updated_at` (cache invalidation on change, spec §6). Two unique
+  indexes: `(site, slug)` and **`(site, scope_type, scope_ref)`** — one territory per scope, so
+  "find the owning territory" is never ambiguous; several groups sharing a branch is several
+  assignments to one territory. `parent_id` is a self-FK with `nullOnDelete`: a child whose
+  parent is deleted becomes a root, its members keep what they had. `scope_type` is a string,
+  not a DB enum (a fourth kind must not need a migration on every site). `scope_ref` is 512 wide
+  and lower-cased at write time (Phase 0.3 case finding).
+- `delegated_assignments`: `territory_id` FK `cascadeOnDelete`; `subject_id`/`granted_by` are
+  191-char strings (file-driver UUIDs or whatever the Eloquent site chose — no FK possible);
+  `granted_by` nullable so seeders/CLI can grant and a deleted admin does not take assignments
+  down with them; index on `(subject_type, subject_id)` for the per-listing hot path.
+- `delegated_audit`: **no foreign keys at all**, no `updated_at`. Append-only is enforced by the
+  model (Phase 4), and the schema must not be able to cascade or rewrite a row. `territory_id` is
+  a plain nullable bigint, indexed with `created_at` for the per-territory log.
+- Testbench 11's `testing` SQLite connection sets `foreign_key_constraints` from
+  `DB_FOREIGN_KEYS`, **default off**. `phpunit.xml` now sets it `true`; without it the cascade,
+  null-on-delete and FK-rejection tests pass vacuously. Every real driver enforces.
+- `php please migrate` in the host fails with "missing: timezone" — `please` prefixes
+  `statamic:` and Symfony abbreviation-matches `migrate` to `statamic:migrate-dates-to-utc`.
+  Use `php artisan migrate`. Added to CLAUDE.md.
