@@ -12,6 +12,11 @@ The host site's `composer.json` has a path repository pointing here, and Compose
 it — edits in this repo are live in the site immediately. There is **no reinstall or rebuild
 step** after changing addon code.
 
+The host site also has `statamic/eloquent-driver` as a **`require-dev`** dependency (added for
+the Phase 0.3 spike). Its config is deliberately not published, so the host runs on the file
+driver; `recon/QueryScopingSpikeTest.php` flips the `entries` repository to Eloquent in-process
+when run with `SPIKE_DRIVER=eloquent`. Do not publish the driver's config into the host.
+
 ## Target platform — do not resolve to anything older
 
 - **Statamic:** `^6.0` — this addon targets Statamic 6. If a dependency resolves

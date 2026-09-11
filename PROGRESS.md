@@ -10,8 +10,8 @@
 ## Phase 0 — Reconnaissance (no code)
 - [x] **Enforcement surface inventory** (spec §5): for each CP surface, log against a restricted test user whether `EntryPolicy` is consulted and how a restriction would apply. Entry listing, edit screen, direct URL, bulk actions, structure view, global search, command palette, REST, GraphQL, Live Preview, revisions, navigation editing. Write findings into Notes.
 - [x] Read `doefom/restrict` source; record how it hooks the listing and what Statamic 6 + Eloquent would need
-- [ ] **Spike query scoping** on both drivers — can the entry query be scoped by territory before execution, on flat file and on Eloquent? Record the answer; it determines the architecture
-- [ ] Do not write an enforcement check until all three are in Notes
+- [x] **Spike query scoping** on both drivers — can the entry query be scoped by territory before execution, on flat file and on Eloquent? Record the answer; it determines the architecture
+- [x] Do not write an enforcement check until all three are in Notes
 
 ## Phase 1 — Foundations
 - [ ] Scaffold; confirm `statamic/cms: ^6.0` (pinned to a tested range, not open-ended) and `php: ^8.2`
@@ -211,3 +211,80 @@ stayed "planned".
 predicates derived from one resolution service, and use the *same* service inside the policy layer
 for single-entry decisions. Two consumers, one source of truth, so listing and edit screen cannot
 disagree. Do not adopt restrict's per-row policy filter.
+
+### Phase 0.3 — Query-scoping spike, both drivers (cms 6.31.0, eloquent-driver 5.11.1)
+
+**Method.** `recon/QueryScopingSpikeTest.php`, run twice from the host site with `SPIKE_DRIVER=file`
+and `SPIKE_DRIVER=eloquent`. The Eloquent run flips only the `entries` repository to Eloquent
+in-process (config set before `RegisterProviders`, string-id model + migration on the in-memory
+SQLite) — `statamic/eloquent-driver` is now a **`require-dev`** dependency of the host site, config
+unpublished, so the host stays on the file driver at runtime (verified: `Entry::query()` is still the
+Stache builder). Fixture: structured `pages` (`/cardiology` → `/trials` → `/phase-2`, `/oncology` →
+`/chemo` + draft, and a `/cardiology-alumni` sibling to catch prefix bugs), a `news` collection
+tagged with a `departments` taxonomy, a `pages` search index, and a 1,500-entry branch for timing.
+
+**Answer: yes, on both drivers, with correct pagination — but only through a compiled predicate,
+not a naive one.** Details:
+
+| Probe | Flat file (Stache) | Eloquent |
+|---|---|---|
+| Builder class | `Statamic\Stache\Query\EntryQueryBuilder` | `Statamic\Eloquent\Entries\EntryQueryBuilder` |
+| Branch: `uri = X OR uri LIKE 'X/%'` | ✅ 3 rows, sibling `/cardiology-alumni` excluded | ✅ same |
+| `paginate(2)` under that scope | ✅ 2 / 1, total 3 | ✅ same |
+| Listing endpoint via `EntriesIndexQuery::hook('query')`, `perPage=2` | ✅ 200, 2 / 1, `meta.total` 3 | ✅ same |
+| Listing `?search=` with a search index (`Statamic\Search\QueryBuilder`) | ✅ predicate applied as a PHP post-filter over the hit set, before pagination (alumni excluded) | ✅ same |
+| Taxonomy: top-level `whereTaxonomy` / `whereTaxonomyIn` | ✅ | ✅ |
+| `whereIn('parent', …)` (direct children) | ✅ `Parents` index, updated in-process | ⚠️ works only because `data->parent` is denormalised by **queued** `UpdateCollectionEntryParent` jobs on tree save — lags behind on a real queue. `uri` is updated synchronously (`UpdateStructuredEntryUris` → direct `update`). Scope by URI, never by parent, on Eloquent. |
+| `whereIn('id', <ids from tree>)` | ✅ | ✅ — the always-portable fallback |
+| **Naive union** `branch OR where('collection','news')` | ❌ **collapsed to the branch rows** | ✅ |
+| **Naive union** `branch OR (collection + whereTaxonomy)` inside a nested closure | ❌ term group dropped → fails *closed* (no news rows) | ❌ **`whereTaxonomy` dropped → fails *open*: all four news rows returned, including untagged** |
+| **Compiled union** (below) | ✅ 7 rows, `paginate(3)` = 3/3/1 total 7 | ✅ identical |
+| Case: `uri = '/CARDIOLOGY'` / `LIKE '/CARDIOLOGY/%'` | both match (Stache `=` lowercases both sides; `like` is `/i` regex) | `like` matches (driver emits `LOWER(uri) LIKE`), `=` does not on SQLite (collation-dependent on MySQL) |
+| Cost, 1,508-entry collection, scoped `count()` vs restrict-style hydrate-and-filter | 4.2 ms vs 26 ms (index warm) | **0.2 ms vs 587 ms** |
+| Relationship-picker index | hook does not fire (`hookHits=0`, all 8 rows) | same |
+
+**Why the naive form breaks — the Stache builder is not a query builder for two columns.**
+`Stache\Query\EntryQueryBuilder::where()`/`whereIn()` intercept `collection` and append it to a
+`$collections` scan-set instead of a where clause: the `or` boolean is ignored, and inside a nested
+closure the clause lands on a throwaway clone and is silently dropped. `whereTaxonomy` has the same
+shape on **both** drivers (`$taxonomyWheres` is only applied on the top-level builder). Nothing
+throws. On Eloquent the dropped taxonomy clause widens the OR group to the whole collection — a
+silent over-grant, which is the exact failure class this product exists to prevent.
+
+**The compiled form that works on both** (this is the shape the resolution service must emit):
+
+1. Top level, always: `whereIn('collection', <every collection any of the user's territories
+   touches>)` — the scan-set Stache needs, a harmless narrowing on Eloquent.
+2. One nested `where(fn)` OR-group whose members never call `where('collection')` or
+   `whereTaxonomy`:
+   - structure branch → `where('uri', X)->orWhere('uri', 'like', X.'/%')` — portable, `uri` is
+     refreshed synchronously on tree save on both drivers;
+   - whole collection → `where($col, handle)` where **`$col` is the one driver-specific token**:
+     `collectionHandle` (a real Stache index) or `collection` (the Eloquent column);
+   - taxonomy term → `whereJsonContains($field, $term)` — supported by both builders;
+   - fallback for anything else → `orWhereIn('id', [...])` resolved up front (one extra query,
+     cacheable).
+3. Normalise territory `scope_ref` URIs to lowercase at write time; do not rely on driver case
+   rules (spike shows they differ per operator and per driver).
+4. Orphan entries (`uri === null`, not in the tree) never match a branch predicate on either
+   driver — consistent with the Phase 0.1 rule that orphans belong to no territory. `delegated:doctor`
+   lists them.
+
+**Architecture decision (recorded, not yet implemented):**
+
+- Territory = query predicates compiled per driver by one service; the same service answers
+  single-entry questions (`contains($entry)`) for the policy layer. Detect the driver from
+  `get_class(Entry::query())` (or the bound `QueryBuilder` contract), not from config.
+- Listing surfaces: the official `EntriesIndexQuery` hook (listing + its search path). The
+  relationship-picker index is unreached by any hook and needs its own seam (Phase 3 task).
+- Do not rebind the query builder globally (Phase 0.2 side effects). Do not filter per row.
+- Two denial tests fall directly out of this spike and must exist in Phase 3: (a) a user with a
+  branch territory and a term territory does not see untagged entries of the term's collection on
+  Eloquent; (b) multi-territory listings return the union without collapsing on flat file.
+- `Hookable::runHooks()` rebinds hook closures to the hookable instance — `$this` inside a hook is
+  `EntriesIndexQuery`, not the registering object. Register hooks from a static/closed-over context.
+- Spec §11 "multiple territories per user — confirm resolution is a union and the listing handles an
+  OR across branches without collapsing": confirmed on both drivers **with the compiled form**, and
+  confirmed to collapse on flat file with the naive form.
+
+Phase 0 is complete: all three prerequisites for writing an enforcement check are in Notes.
