@@ -1,0 +1,5 @@
+# Written by run-build.sh
+build-log.jsonl
+
+# Created (and normally removed) by recon/DelegatedInventoryProbeTest.php
+recon/fixtures/
