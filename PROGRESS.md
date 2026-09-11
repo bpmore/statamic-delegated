@@ -15,7 +15,7 @@
 
 ## Phase 1 — Foundations
 - [x] Scaffold; confirm `statamic/cms: ^6.0` (pinned to a tested range, not open-ended) and `php: ^8.2`
-- [ ] `SECURITY.md` with a contact and stated response time — before any listing exists
+- [x] `SECURITY.md` with a contact and stated response time — before any listing exists
 - [ ] Migrations: `delegated_territories`, `delegated_assignments`, `delegated_audit`
 - [ ] Territory resolution service with caching, unit-tested, no CP booted
 
@@ -313,3 +313,26 @@ only (the `statamic/cms` minor axis is Phase 5), `LICENSE.md` with a plain-words
 - No JS/Vite scaffold yet: nothing to build until the first CP screen (Phase 4). CLAUDE.md
   updated to say so; the "not yet scaffolded" paragraph removed.
 - `composer.lock` is committed (CI runs `composer update` per PHP version, as the sibling does).
+
+### Phase 1.2 — SECURITY.md (2026-09-11)
+
+`SECURITY.md` plus a Security section in the README (spec §1 wants the contact where a buyer looks
+first); `composer.json` already carried `support.security`. Guarded by a test that the policy names
+the advisory channel, an email, and a bolded response time, and that the README links both.
+
+- **Contact.** Primary: GitHub private vulnerability reporting
+  (`…/security/advisories/new`). Fallback: the repo's git-author address, since no sibling addon
+  has a dedicated security mailbox to reuse. Both are the owner's to change before listing.
+- **⚠️ Owner action before listing:** private vulnerability reporting is a per-repository
+  setting (Settings → Code security → Private vulnerability reporting). The `advisories/new` URL
+  is a 404 until it is switched on. Also worth a dedicated address if one exists by then.
+- **Response times** (chosen to be keepable by one person): acknowledge within 3 business days;
+  reproduce + severity within 7 calendar days of that; fix or published mitigation within 30 days
+  for a confirmed cross-territory exposure; anything else next release and ≤ 90 days. Coordinated
+  disclosure, 90-day cap, credit by default, no bounty.
+- **Scope** mirrors the Phase 0.1 inventory and the six Phase 2 invariants; out-of-scope list
+  matches `LICENSE.md` (front end, REST/GraphQL, super users and `configure collections`, assets,
+  versions outside the pin — "report anyway").
+- `statamic.dev/security` does not exist (404); Statamic's own policy is linked at
+  `github.com/statamic/cms/security/policy` (200).
+- Support line: `main` only until 1.0; then current minor, previous minor for 90 days.

@@ -35,3 +35,20 @@ it('pins statamic/cms to a tested range rather than an open-ended one', function
         ->not->toStartWith('>=6.0')
         ->and(preg_match('/^(~|>=)\d+\.\d+/', $constraint))->toBe(1);
 });
+
+it('ships a security policy with a contact and a response time', function () {
+    // Spec §1: a security contact and a disclosure policy exist before there
+    // is a listing to buy. This only proves the file says something in each
+    // slot; whether the times are honoured is not something a test can check.
+    $policy = (string) file_get_contents(repoPath('SECURITY.md'));
+
+    expect($policy)
+        ->toContain('security/advisories/new')
+        ->and(preg_match('/[\w.+-]+@[\w-]+\.[\w.]+/', $policy))->toBe(1)
+        ->and(preg_match('/\*\*\d+ (business|calendar) days\*\*/', $policy))->toBe(1);
+
+    // The README is where a buyer looks first, so it carries the contact too.
+    expect((string) file_get_contents(repoPath('README.md')))
+        ->toContain('SECURITY.md')
+        ->toContain('security/advisories/new');
+});

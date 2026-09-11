@@ -21,6 +21,17 @@ not covered.
 > phase by phase and is not yet installable for use. This file will be rewritten
 > before 1.0.
 
+## Security
+
+A bug that lets a control-panel user reach content outside their territory is a
+vulnerability, not a defect. Report it privately — through [GitHub private
+vulnerability reporting](https://github.com/bpmore/statamic-delegated/security/advisories/new)
+or by email to <(address removed)> — and not in a public issue. You will
+get an acknowledgement within 3 business days and a severity within 7 days of
+that; a confirmed cross-territory exposure is fixed or mitigated within 30 days.
+[`SECURITY.md`](SECURITY.md) has the full policy, including what is in and out
+of scope.
+
 ## Requirements
 
 - PHP 8.2 or later
