@@ -9,7 +9,7 @@
 
 ## Phase 0 — Reconnaissance (no code)
 - [x] **Enforcement surface inventory** (spec §5): for each CP surface, log against a restricted test user whether `EntryPolicy` is consulted and how a restriction would apply. Entry listing, edit screen, direct URL, bulk actions, structure view, global search, command palette, REST, GraphQL, Live Preview, revisions, navigation editing. Write findings into Notes.
-- [ ] Read `doefom/restrict` source; record how it hooks the listing and what Statamic 6 + Eloquent would need
+- [x] Read `doefom/restrict` source; record how it hooks the listing and what Statamic 6 + Eloquent would need
 - [ ] **Spike query scoping** on both drivers — can the entry query be scoped by territory before execution, on flat file and on Eloquent? Record the answer; it determines the architecture
 - [ ] Do not write an enforcement check until all three are in Notes
 
@@ -131,3 +131,83 @@ both regardless of upstream.
 (`CountUsers` middleware) — `STATAMIC_PRO_ENABLED=true`. `Stache::stores()->each(…->directory())`
 plus `app(RoleRepository::class)->path()` / `app(UserGroupRepository::class)->path()` is enough to
 sandbox the file driver; blueprints are *not* sandboxed (they load from `resources/blueprints`).
+
+### Phase 0.2 — `doefom/restrict` read (v0.5.4, commit `d47213b`, 2024-06-02, MIT; last activity mid-2024)
+
+Three files: `ServiceProvider.php`, `Restrict.php`, `Stache/Query/EntryQueryBuilder.php`.
+Requires a *custom* `EntryPolicy` subclass bound by the site; the addon itself only filters.
+
+**How it hooks the listing.** It does not touch the listing controller. In `bootAddon()` it
+rebinds the concrete flat-file builder, `Statamic\Stache\Query\EntryQueryBuilder`, to a subclass
+that overrides `getFilteredKeys()` — the Stache step that resolves the set of matching item keys
+*before* `orderKeys()`/`limitKeys()` and before `getCountForPagination()`. The override hydrates
+every matched key (`$this->store->getItem($key)`) and keeps it only if
+`app(EntryPolicy::class)->view($user, $entry)` is true. Guards: `Statamic::isCpRoute()`, user is
+non-super, the bound policy is not the stock class, and **not `runningInConsole()`**.
+
+**Consequences of that design (record, do not repeat):**
+
+- Filtering happens before pagination, so page sizes and totals are correct — better than the
+  post-paginate filter the spec warns about. But it is **O(n) per query**: every key in the
+  collection is hydrated and the policy runs per row on every listing page, count, and pluck.
+  On a 40k-entry collection that is 40k policy evaluations per request (the Stache item cache
+  makes the second hydration cheap, not the first, and never the policy).
+- It is **global**: every `Entry::query()` on a CP route is filtered, not just the listing — the
+  relationship picker index, the listing's LIKE search fallback, and *internal* queries too.
+  Concrete side-effect: `DuplicateEntry::generateTitleAndSlug()` uses `queryEntries()->where('slug')
+  ->count()` to avoid slug collisions; filtered, it can return 0 for a slug that exists and produce
+  a collision. Any query-builder-level filter needs an explicit "unscoped" escape hatch.
+- It calls the policy method **directly**, bypassing the Gate: policy `before()` never runs, so the
+  `configure collections` bypass (Phase 0.1 fact 1) is not honoured in listings while it *is* on the
+  edit screen, and a `Gate::before`/`after` is invisible to it. Listing and single-entry decisions
+  can disagree — the one property a territory product cannot have.
+- `runningInConsole()` is true under PHPUnit, so the addon switches itself off inside feature
+  tests; it is effectively untestable as written. Do not gate on that.
+- It reads `User::current()` inside the query builder. Queue jobs, CLI, and Live Preview token
+  rendering have no user → unfiltered, which is fine for CP-only scope but is a hidden global.
+- `Statamic::isCpRoute()` gating means REST/GraphQL/front-end are untouched — consistent with
+  spec §8, and the README says so plainly. Copy that README stance.
+
+**What Statamic 6 would need (flat file).** Nothing structural. In 6.31.0 `Entry::query()` still
+resolves `Statamic\Contracts\Entries\QueryBuilder` → the concrete Stache builder bound in
+`Stache\ServiceProvider`, `getFilteredKeys()` still exists with the same role, and
+`Statamic::isCpRoute()` still exists. Only the `^v4.0|^v5.0` composer constraint blocks it. The
+per-row model would port as-is — and carry every problem above with it.
+
+**What Eloquent would need — and why restrict never did it.** `statamic/eloquent-driver` v5.11.1
+(the Statamic 6 line, requires `cms ^6.10`) binds `Statamic\Eloquent\Entries\EntryQueryBuilder`,
+which extends `Statamic\Query\EloquentQueryBuilder` and wraps a real Illuminate builder. There is
+**no key list to filter**: `get()`/`paginate()`/`count()` go straight to SQL with LIMIT/OFFSET
+applied by the database. A per-row policy can only run *after* the page comes back, which is
+exactly the "page one has 9 rows, page two has 14, totals lie" failure in spec §5. The only correct
+Eloquent implementation is to add `where` clauses before execution — i.e. the restriction must be
+expressible as a **query predicate**, not as a PHP callback. That is the structural reason the
+policy-callback model cannot be made driver-agnostic, and the reason restrict's Eloquent support
+stayed "planned".
+
+**What both drivers accept (reading only — the Phase 0.3 spike must confirm by running it):**
+
+- Flat file: `CollectionEntriesStore` ships **`uri` and `parent` indexes** (plus `slug`, `site`,
+  `published`, `title`, `origin`, `collectionHandle`), and the Stache builder supports `like`
+  (`filterTestLike` → SQL-LIKE-to-regex). So `where('uri', 'like', '/cardiology/%')` and
+  `whereIn('parent', [...])` resolve **from the index without hydrating entries**. Nested/`or`
+  wheres are supported (`type == 'Nested'`), so a union across several territories is expressible.
+- Eloquent: `uri` is a **native column** (`COLUMNS` = id, site, origin_id, published, slug, uri,
+  data, date, collection, …); `parent` is not (structure lives in the trees table), so scope by
+  URI prefix or by an explicit ID list, not by parent.
+- Both implement the same `QueryBuilder` contract, so a predicate added in the official
+  `Statamic\Hooks\CP\EntriesIndexQuery::hook('query')` is driver-agnostic and runs before
+  `paginate()`.
+- Open question for the spike: when a collection has a search index configured,
+  `EntriesController::indexQuery()` returns a `Statamic\Search\QueryBuilder`, a third builder
+  class; whether it honours a `uri`/`parent` `where` needs testing on both the local and Algolia
+  drivers, or the listing's search path needs its own guard.
+- Open question for the spike: nothing hooks the relationship-picker index
+  (`Fieldtypes\Entries::getIndexQuery`), so a hook-only design leaves it open (Phase 0.1 table).
+  Candidates: rebind the `entries` fieldtype class, or a scoped rebind of the builder with an
+  unscoped escape hatch. Decide after the spike, not before.
+
+**Direction this points to (recommendation, to be confirmed by 0.3):** express territory as query
+predicates derived from one resolution service, and use the *same* service inside the policy layer
+for single-entry decisions. Two consumers, one source of truth, so listing and edit screen cannot
+disagree. Do not adopt restrict's per-row policy filter.
