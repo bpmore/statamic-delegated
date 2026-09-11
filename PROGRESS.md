@@ -21,7 +21,7 @@
 
 ## Phase 2 — Escalation invariants (tests before features)
 - [x] Cannot grant a role they do not hold — written failing, parked as `todo` until 2.7
-- [ ] Cannot add a user to a territory they do not administer
+- [x] Cannot add a user to a territory they do not administer — written failing, parked as `todo` until 2.7
 - [ ] Cannot edit, demote or delete a super user
 - [ ] Cannot create or modify roles
 - [ ] Cannot widen their own territory
@@ -455,3 +455,16 @@ group's role without being in the group → not held; a non-existent role → re
 "harmless"); super user → exempt. Un-marked run: **9 failed** —
 `BindingResolutionException: Target [TerritoryAdministration] is not instantiable` — i.e. failing
 because the feature does not exist, which is the point.
+
+**Invariant 2 — cannot add a user to a territory they do not administer**
+(`CannotAddToTerritoryNotAdministeredTest`, 14 tests). Fixture: `/` → `/cardiology` → `/cardiology/
+trials`, and `/` → `/oncology`; `head` is admin of `/cardiology`, `staff` a member. Allowed: own
+territory; a *child* of it (administration flows down with membership, Phase 1.4); two territories
+when admin of both; admin held via a group. Refused, with nothing written and
+`TERRITORY_NOT_ADMINISTERED`: a sibling (`/oncology`); the **parent** (`/` — up is not down); a
+member who is not an admin, even at home; any level (adding an *admin* elsewhere is worse, not
+different); a group subject; the admin adding *themselves* elsewhere; **removing** a member from
+another territory (removal is the same boundary — and would be a denial of service on another
+department); a territory id that does not exist; and — order of checks — a request whose roles
+invariant 1 *would* allow but whose territory is not theirs grants no role either. Super exempt.
+Un-marked run: **14 failed**, all on `TerritoryAdministration is not instantiable`.
