@@ -18,7 +18,7 @@ final class ContentFacts
 
     public readonly string $collection;
 
-    /** Null for an entry that is not in its collection's tree (an orphan). */
+    /** Null for content with no URI: a collection without a route, or an entry not yet read back through its tree. */
     public readonly ?string $uri;
 
     /** @var list<string> Term references, "taxonomy::slug". */

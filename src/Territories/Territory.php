@@ -43,18 +43,19 @@ final class Territory
 
     private function containsUri(?string $uri): bool
     {
-        // A root territory is the whole site, orphans included. On the
-        // Eloquent driver an entry outside its tree carries a route-derived
-        // URI as if it sat at the root, and one dropped from the tree keeps
-        // its last URI; on the flat-file driver both are null. "Root means
-        // everything" is the one reading both drivers can honour.
+        // A root territory is the whole site. An entry missing from a
+        // structured collection's tree is re-attached at the root whenever
+        // the tree is read (CollectionStructure::validateTree), so it is a
+        // root-level page on both drivers and belongs here and nowhere else.
         if ($this->scopeRef === '/') {
             return true;
         }
 
-        // Below the root, an orphan — no URI — is under no branch. It belongs
-        // to nobody rather than to everybody (Phase 0.1: the duplicate-entry
-        // exfiltration path relies on the opposite reading).
+        // Below the root, an entry with no URI — a collection without a
+        // route, or the moment between a copy being saved and the tree being
+        // re-read — is under no branch. It belongs to nobody rather than to
+        // everybody (Phase 0.1: the duplicate-entry exfiltration path relies
+        // on the opposite reading).
         if ($uri === null) {
             return false;
         }

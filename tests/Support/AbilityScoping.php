@@ -95,7 +95,7 @@ final class AbilityScoping
                 ->and($newsroom->can('view', Entry::find('card')))->toBeFalse();
         });
 
-        it('gives a root territory the orphan, and nobody else', function () {
+        it('gives a root territory the root-level stray, and nobody else', function () {
             $root = Site::territory('site', '/');
             Site::user('sitewide', roles: ['editor']);
             Site::assign($root, 'user:sitewide');

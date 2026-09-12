@@ -66,9 +66,9 @@ final class TerritoryScope
     private function branch(EntryQueryBuilder $query, string $uri): void
     {
         if ($uri === '/') {
-            // The whole site, orphans included: no URI predicate at all. See
-            // Territory::containsUri for why this is the same on both
-            // drivers and `whereNotNull('uri')` would not be.
+            // The whole site: no URI predicate at all. An entry missing from
+            // the tree is a root-level page (Territory::containsUri), and an
+            // entry with no URI at all belongs to a root territory too.
             return;
         }
 

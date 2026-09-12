@@ -85,7 +85,7 @@ final class ListingScoping
                 ->and($r->json('meta.total'))->toBe(6);
         });
 
-        it('never shows the sibling that shares the prefix, the orphan, or the home page', function () {
+        it('never shows the sibling that shares the prefix, the root-level stray, or the home page', function () {
             $t = Site::territory('cardiology', '/cardiology');
             Site::user('card-editor', roles: ['viewer']);
             Site::assign($t, 'user:card-editor');
@@ -131,10 +131,10 @@ final class ListingScoping
                 ->and(ListingScoping::ids(ListingScoping::listing('mixed', 'news')))->toEqualCanonicalizing(['n1', 'n3']);
         });
 
-        it('gives a root-branch territory the whole site, orphan included, on both drivers', function () {
-            // The orphan has no URI on the flat-file driver and a root-level
-            // one on Eloquent. A root territory is defined as everything so
-            // that the two agree; below the root, an orphan is nobody's.
+        it('gives a root-branch territory the whole site, the root-level stray included, on both drivers', function () {
+            // An entry never placed in the tree is re-attached at the root on
+            // read, so it is a root-level page on both drivers: inside a root
+            // territory, inside no department.
             $t = Site::territory('site', '/');
             Site::user('sitewide', roles: ['viewer']);
             Site::assign($t, 'user:sitewide');

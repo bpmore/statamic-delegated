@@ -13,7 +13,7 @@ use Statamic\Facades\Term;
 /**
  * The content every enforcement test is judged against. One structured
  * collection with two departments, a sibling that shares a prefix, an
- * orphan outside the tree, and a flat collection tagged by department.
+ * entry never placed in the tree, and a flat collection tagged by department.
  *
  *   /                      home
  *   /cardiology            card
@@ -23,7 +23,8 @@ use Statamic\Facades\Term;
  *   /oncology/chemo        chemo
  *   /oncology/secret-draft oncdraft   (unpublished)
  *   /cardiology-alumni     alumni     (a sibling, not a descendant)
- *   (no URI)               stray      (in the collection, not in the tree)
+ *   /stray                 stray      (never placed in the tree — Statamic re-attaches
+ *                                      it at the root on read, so it is a root-level page)
  *
  *   news: n1 [cardiology], n2 [oncology], n3 [cardiology, oncology], n4 []
  */

@@ -19,19 +19,21 @@ it('really is running entries on the Eloquent driver', function () {
     expect(get_class(Entry::query()))->toBe(EntryQueryBuilder::class)
         ->and(DB::table('entries')->count())->toBe(13)
         ->and(DB::table('entries')->where('id', 'phase2')->value('uri'))->toBe('/cardiology/trials/phase-2')
-        // The driver stores a route-derived URI for an entry outside its tree,
-        // as if it sat at the root. The flat-file driver reports null. Both
-        // Territory::containsUri and TerritoryScope are written around this.
+        // An entry never placed in the tree is re-attached at the root on
+        // read (CollectionStructure::validateTree), so it is a root-level
+        // page — on this driver, in the stored column too.
         ->and(DB::table('entries')->where('id', 'stray')->value('uri'))->toBe('/stray')
         ->and(Entry::find('stray')->uri())->toBe('/stray');
 });
 
-it('keeps an entry\'s last URI after it is dropped from the tree, until it is saved again', function () {
+it('keeps an entry\'s last URI in the column after it is dropped from the stored tree, until it is saved again', function () {
     // Statamic's own behaviour, recorded because a territory predicate
-    // reads that column: an entry taken out of the tree without being
-    // deleted stays visible to its old department on this driver, and to
-    // nobody on the flat-file driver. Not a cross-territory exposure — the
-    // last URI was inside the old territory — but a difference to document.
+    // reads that column. The tree re-attaches the entry at the root on read
+    // (it is now /phase-2 in the tree), but this driver's column — and
+    // Entry::uri(), which reads it — keep the old value until a save. The
+    // control panel cannot produce this state (its tree editor has no
+    // "remove without deleting"), and the old URI was inside the old
+    // territory, so it is not a cross-territory exposure.
     Content::build();
     $tree = Collection::findByHandle('pages')->structure()->in('default');
     $tree->tree([

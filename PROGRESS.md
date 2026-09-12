@@ -34,7 +34,7 @@
   - [x] 3.2.a Policy layer — every entry ability territory-aware via the Gate; closes edit screen, direct URL, update, publish/unpublish, live preview, revisions, nav page edit, picker `data`, command palette, built-in delete/publish/unpublish actions
   - [x] 3.2.b `duplicate_entry` — require `view` on the source; not offered on out-of-territory items
   - [x] 3.2.c Create under a parent — `_parent` (store) and `parent` (create screen) must land inside territory; preview.create and title-format.create turned out to carry no parent
-  - [ ] 3.2.d Structure tree GET — authorize the collection, prune branches outside territory
+  - [x] 3.2.d Structure tree GET — authorize the collection, prune branches outside territory
   - [ ] 3.2.e Structure tree PATCH and flat reorder — moves confined to territory; `deletedEntries` checked
   - [ ] 3.2.f Navigation tree GET and PATCH — linked entries outside territory hidden / not linkable
   - [ ] 3.2.g Relationship picker index — scope the fieldtype's query
@@ -725,3 +725,31 @@ admin confined to their branch, not the parent's; a flat collection judged by ro
 branch member refused, a collection territory allowed, a term territory allowed only when the
 submitted values carry the term; the create screen refused for an outside parent; super exempt.
 Fixture: the shared `editor` role gained `create news entries` (core `store` authorization).
+
+### Phase 3.2.d — Structure tree GET (2026-09-11)
+
+**Built.** `Enforcement\PrunesStructureTree`, middleware on the CP group acting only on
+`collections.tree.index`: first `Gate::authorize('view', $collection)` — the check the
+collection's own page already makes and the tree endpoint never did (closes the Phase 0.1 core
+gap: `access cp` alone enumerated the site); then, for a non-exempt user, prunes the JSON. An
+entry inside the territory is kept whole; one outside is dropped; one outside that sits *above*
+an inside entry, or the tree's root, stays as a **redacted placeholder** — id and `entry`, a title
+derived from its own URL segment (which the user already knows from their entries' URLs), and
+nulls for everything else, flagged `delegated_redacted` — so the tree keeps its shape for the
+PATCH merge in 3.2.e. Text/URL branches are nobody's. Tested on both drivers (5 × 2): a
+`view`-less user → 403; a member sees only their branch with a redacted root; a sub-branch member
+sees a redacted ancestor above their whole sub-branch; a user with permission but no territory in
+the collection sees only the redacted root; a super user sees everything, nothing redacted.
+
+**Correction to Phase 1.4 / 3.1's "orphan" story, found by the super-user tree test.**
+`CollectionStructure::validateTree()` **re-attaches every entry missing from the stored tree at
+the root level whenever the tree is read**, on both drivers. So an entry never placed in the tree
+(or dropped from it) is persistently a root-level page (`/{slug}`); "no URI" exists only
+transiently within one request (a freshly saved copy before the tree is re-read) or for a
+collection without a route. The rule already chosen in 3.1 — a root territory is the whole site;
+below the root, no URI means no branch — is exactly right for this, and the two drivers agree on
+it. The Eloquent-only difference is narrower than 3.1 said: after an entry is dropped from the
+stored tree, the tree re-attaches it at the root but the driver's `uri` *column* (and `Entry::uri()`,
+which reads it) keeps the old value until a save — a state the CP's tree editor cannot produce.
+Comments and test names now say "root-level stray" instead of "orphan"; the SECURITY.md
+out-of-scope bullet and the 3.1 note are read in that light.
