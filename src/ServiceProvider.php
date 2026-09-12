@@ -7,6 +7,7 @@ namespace Bpmore\StatamicDelegated;
 use Bpmore\StatamicDelegated\Administration\DelegatedAdministration;
 use Bpmore\StatamicDelegated\Administration\TerritoryAdministration;
 use Bpmore\StatamicDelegated\Administration\Visibility;
+use Bpmore\StatamicDelegated\Enforcement\ClosesEntryOracles;
 use Bpmore\StatamicDelegated\Enforcement\GuardsEntryAbilities;
 use Bpmore\StatamicDelegated\Enforcement\GuardsEntryCreation;
 use Bpmore\StatamicDelegated\Enforcement\GuardsNavigationTree;
@@ -53,6 +54,7 @@ class ServiceProvider extends AddonServiceProvider
             GuardsStructureTreeUpdate::class,
             GuardsNavigationTree::class,
             ScopesUsersListing::class,
+            ClosesEntryOracles::class,
         ],
     ];
 

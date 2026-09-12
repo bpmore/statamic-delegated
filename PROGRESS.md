@@ -30,7 +30,7 @@
 
 ## Phase 3 — Enforcement
 - [x] Query scoping (or documented post-filter fallback with its limits stated) — scoped before execution on both drivers, no fallback needed
-- [ ] One task per surface from the Phase 0 inventory, each with a denial test:
+- [x] One task per surface from the Phase 0 inventory, each with a denial test:
   - [x] 3.2.a Policy layer — every entry ability territory-aware via the Gate; closes edit screen, direct URL, update, publish/unpublish, live preview, revisions, nav page edit, picker `data`, command palette, built-in delete/publish/unpublish actions
   - [x] 3.2.b `duplicate_entry` — require `view` on the source; not offered on out-of-territory items
   - [x] 3.2.c Create under a parent — `_parent` (store) and `parent` (create screen) must land inside territory; preview.create and title-format.create turned out to carry no parent
@@ -39,7 +39,7 @@
   - [x] 3.2.f Navigation tree GET and PATCH — linked entries outside territory hidden / not linkable
   - [x] 3.2.g Relationship picker index — scope the fieldtype's query
   - [x] 3.2.h Users listing — a territory admin holding `view users` sees only visible users
-  - [ ] 3.2.i Direct-URL oracles (`cp/edit/{id}`, `{entry}/{slug}` redirect) — 404 outside territory
+  - [x] 3.2.i Direct-URL oracles (`cp/edit/{id}`, `{entry}/{slug}` redirect) — 404 outside territory
 - [ ] Super users explicitly exempt, and documented as such
 
 ## Phase 4 — Territory management
@@ -861,3 +861,21 @@ and shared, allowed for wholly-owned; delete neither offered nor run on an invis
 a wholly-owned one; the unconfined administrator still edits anyone Statamic lets them.
 Test-side: Statamic requires an *elevated session* to edit users — its own 403, disabled in the
 file so the refusals proven are Delegated's.
+
+### Phase 3.2.i — Direct-URL oracles (2026-09-12)
+
+`Enforcement\ClosesEntryOracles`, middleware on the CP group matching the two unnamed redirect
+routes by URI (`cp/edit/{id}` and `cp/collections/{collection}/entries/{entry}/{slug}`): for a
+confined user, an entry outside their territories answers 404 — exactly what a non-existent id
+answers — instead of 302-to-edit-URL, which told any control-panel user the entry existed and
+which collection it was in. Inside, and for exempt users, the redirects work as before. Tested on
+both drivers inside `AbilityScoping` (outside → 404 for both routes incl. a draft; a non-existent
+id → 404; a no-territory user → 404 for everything; inside → 302 to the right edit URL; super →
+302 for an outside entry). Non-entry ids on `cp/edit/{id}` (terms, assets) are left to Statamic.
+
+**Phase 3.2 complete.** Every surface in the Phase 0.1 inventory now has an enforcement point and
+a denial test: listing + search (3.1), policy layer / edit / update / publish / preview / revisions
+/ nav page editor / picker data / command palette / built-in bulk actions (3.2.a), duplicate
+(3.2.b), create-under-parent (3.2.c), structure tree GET (3.2.d) and PATCH + flat reorder (3.2.e),
+nav tree GET and PATCH (3.2.f), relationship picker (3.2.g), users listing and user screens
+(3.2.h), redirect oracles (3.2.i). REST and GraphQL remain out of scope by design (userless).

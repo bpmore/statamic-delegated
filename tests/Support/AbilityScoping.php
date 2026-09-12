@@ -128,6 +128,26 @@ final class AbilityScoping
 
         // ---------------------------------------------------------- surfaces
 
+        it('answers the redirect oracles with 404 for an entry outside the territory, as for one that does not exist', function () {
+            // Before: 302 to the edit URL for any id, telling any control-panel
+            // user that the entry exists and which collection it is in.
+            $as = fn (string $u, string $path) => AbilityScoping::as($u)->get($path);
+
+            expect($as('card-editor', '/cp/collections/pages/entries/onc/whatever')->status())->toBe(404)
+                ->and($as('card-editor', '/cp/edit/onc')->status())->toBe(404)
+                ->and($as('card-editor', '/cp/edit/oncdraft')->status())->toBe(404)
+                ->and($as('card-editor', '/cp/edit/no-such-entry')->status())->toBe(404)
+                ->and($as('nobody', '/cp/edit/card')->status())->toBe(404);
+
+            // Inside, and for a super user, the redirect still works.
+            $inside = $as('card-editor', '/cp/collections/pages/entries/card/whatever');
+            expect($inside->status())->toBe(302)
+                ->and($inside->headers->get('Location'))->toContain('/cp/collections/pages/entries/card');
+
+            expect($as('card-editor', '/cp/edit/card')->status())->toBe(302)
+                ->and($as('root', '/cp/edit/onc')->status())->toBe(302);
+        });
+
         it('refuses the edit screen and a direct URL for an entry outside the territory', function () {
             expect(AbilityScoping::as('card-editor')->getJson('/cp/collections/pages/entries/onc')->status())->toBe(403)
                 ->and(AbilityScoping::as('card-editor')->getJson('/cp/collections/pages/entries/oncdraft')->status())->toBe(403)
