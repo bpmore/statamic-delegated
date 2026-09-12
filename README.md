@@ -48,6 +48,19 @@ administrator, say) appears as "someone outside your territory", never by name.
 The log begins when Delegated is installed; territories that existed before it
 have no creation row.
 
+## `php please delegated:doctor`
+
+Reads everything and changes nothing. It reports territories whose branch,
+collection, term or site no longer exists (their members can reach nothing);
+assignments to users or groups that are gone; territories with nobody in
+them; non-super users holding `configure collections`, whom Statamic exempts
+from every entry check; territory admins who also hold a user-management
+permission and so can leave their territory through Statamic's own screens;
+entries missing from their collection's stored tree, and trees naming entries
+that do not exist; and, per collection and site, how much content belongs to
+no territory at all. `--json` for scripts. Exit code 1 when there is a
+problem, so it can gate a deploy.
+
 ## Who Delegated does not restrict
 
 Some people bypass everything Delegated does, by design, and the product is safer

@@ -46,7 +46,7 @@
 - [x] CP screens: territories, assignments, membership — site-administration screen; clicked through in the host 2026-09-12
 - [x] Territory admin self-service, constrained by the Phase 2 invariants — backend and page built and tested; browser pass pending (session expired)
 - [x] Audit log, scoped per territory — written on every write and refusal, read site-wide and per territory with outside actors unnamed; browser pass pending (no CP session)
-- [ ] `delegated:doctor` — orphaned territories, entries with no owner
+- [x] `delegated:doctor` — orphaned territories, entries with no owner, and the drift and misconfiguration recorded along the way
 
 ## Phase 5 — Hardening and ship
 - [ ] CI matrix axis on `statamic/cms` minor versions, not just PHP
@@ -1068,3 +1068,45 @@ and a refusal aimed outside belonging to no territory. 386 tests, Pint clean.
 **Caveat noted for `doctor` / docs:** the host's territory 2 predates audit writes, so its
 creation has no row. A site that adds Delegated to existing territories seeded another way has
 the same gap — the log starts when the addon does.
+
+### Phase 4.4 — `delegated:doctor` (2026-09-12)
+
+**Built.** `Doctor\Doctor::diagnose()` returns `Finding`s (check slug, severity problem / warning /
+note, message, one detail line per thing); `Console\Doctor` prints them with Laravel's components
+or as `--json`, exit 1 on any problem. Reads only. The checks, gathered from every earlier note
+that said "for the doctor":
+
+- *problem* `territory-scope-missing` — site, collection, taxonomy/term, or branch entry
+  (`Entry::findByUri`) gone; the root branch `/` always exists. Spec §11's deleted-scope case.
+- *problem* `configure-collections-holder` — non-super users with the permission, naming the role
+  (Phase 0.1 architectural fact 1).
+- *warning* `territory-parent-missing` — the map's documented "treated as top-level" case.
+- *warning* `assignment-subject-missing` — user or group deleted outside Delegated.
+- *warning* `territory-admin-with-management-permission` — an admin (direct or via a group) who
+  holds any `ManagementPermissions::ALL` entry other than `super`/`configure collections`: not an
+  escalation Delegated can stop, but the door invariant 4 keeps shut from the other side.
+- *warning* `entry-outside-tree` — entries of a structured collection absent from the **stored**
+  tree (`Tree::fileData()`, before `validateTree` re-attaches them at the root): the Phase 3.2.b
+  duplicate-a-top-level-page wart.
+- *warning* `tree-names-missing-entry` — the reverse: a stored tree naming an id not in the
+  collection; Statamic drops it and everything under it on read, so a territory rooted there
+  covers nothing. Found in the host, not planned: the host's `pages` tree says `entry: home` while
+  the Home entry's id is a UUID, so both host pages are "outside the tree".
+- *note* `territory-empty` — no members counting inherited membership from ancestors.
+- *note* `entry-unowned` — per collection and site with at least one territory, "n of m entries
+  belong to no territory" with up to five URIs; a site with no territories is one line.
+
+**Host run:** `Cardiology` (#2) points at `/cardiology`, which does not exist in the host (the
+seed from 4.2 named a branch the host never had) → the problem line; the broken `home` tree
+reference above; `fr` has no territories. All real. Not fixed in the host — they are the user's
+content, and 4.2's browser check may still want that territory.
+
+**Tests** (`DoctorTest` 10, `Eloquent/DoctorTest` 1; 397 total): healthy fixture raises only the
+stray-page warning and the unowned note, exit 0; five kinds of missing scope in one run and a
+scope deleted after the fact (term and branch); dangling parent through a fake `TerritorySource`
+(the FK forbids it and SQLite cannot drop the FK inside the test transaction); deleted user and
+group; empty territories with inheritance honoured; `configure collections` holder with role
+named, super not listed, exit 1; admins with `edit users` directly and through an admin group,
+a member not reported; a tree naming a ghost; human output and `--json` shape. Two test-only
+artefacts: Statamic memoises a user's permissions per request (`PermissionCache::clear()`) and
+the Eloquent driver memoises `findByUri` (`Blink::flush()`) — neither matters to a CLI run.

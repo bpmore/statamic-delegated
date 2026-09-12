@@ -54,6 +54,11 @@ class ServiceProvider extends AddonServiceProvider
         'cp' => __DIR__.'/../routes/cp.php',
     ];
 
+    // `php please delegated:doctor`. See Doctor\Doctor for the checks.
+    protected $commands = [
+        Console\Doctor::class,
+    ];
+
     protected $vite = [
         'input' => ['resources/js/cp.js'],
         'publicDirectory' => 'resources/dist',
