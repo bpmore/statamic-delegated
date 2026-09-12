@@ -1,6 +1,7 @@
 <?php
 
 use Bpmore\StatamicDelegated\Http\Controllers\AssignmentsController;
+use Bpmore\StatamicDelegated\Http\Controllers\AuditController;
 use Bpmore\StatamicDelegated\Http\Controllers\MyTerritoriesController;
 use Bpmore\StatamicDelegated\Http\Controllers\TerritoriesController;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +17,8 @@ Route::middleware('can:manage territories')->prefix('delegated')->name('delegate
 
     Route::post('territories/{territory}/assignments', [AssignmentsController::class, 'store'])->name('territories.assignments.store');
     Route::delete('territories/{territory}/assignments', [AssignmentsController::class, 'destroy'])->name('territories.assignments.destroy');
+
+    Route::get('audit', [AuditController::class, 'all'])->name('audit.index');
 });
 
 // Territory admin self-service. No permission: the controller admits anyone
@@ -27,4 +30,5 @@ Route::prefix('delegated')->name('delegated.')->group(function () {
     Route::post('my-territories/{territory}/members', [MyTerritoriesController::class, 'addMember'])->name('my-territories.members.store');
     Route::delete('my-territories/{territory}/members', [MyTerritoriesController::class, 'removeMember'])->name('my-territories.members.destroy');
     Route::patch('my-territories/{territory}/members/{user}/roles', [MyTerritoriesController::class, 'setRoles'])->name('my-territories.members.roles');
+    Route::get('my-territories/{territory}/audit', [AuditController::class, 'territory'])->name('my-territories.audit');
 });

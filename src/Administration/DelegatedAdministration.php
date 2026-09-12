@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bpmore\StatamicDelegated\Administration;
 
+use Bpmore\StatamicDelegated\Audit\AuditLog;
+use Bpmore\StatamicDelegated\Resolution\Subjects;
 use Bpmore\StatamicDelegated\Resolution\TerritoryResolver;
 use Bpmore\StatamicDelegated\Storage\TerritoryStore;
 use Bpmore\StatamicDelegated\Territories\Level;
@@ -42,6 +44,7 @@ final class DelegatedAdministration implements TerritoryAdministration
         private readonly TerritoryResolver $resolver,
         private readonly TerritoryStore $store,
         private readonly Visibility $visibility,
+        private readonly AuditLog $audit,
     ) {}
 
     public function addMember(Actor $actor, int $territoryId, string $subject, Level $level, array $roles = []): void
@@ -57,11 +60,13 @@ final class DelegatedAdministration implements TerritoryAdministration
         }
 
         if (! $actor->isSuper) {
-            $this->requireAdministers($actor, $territoryId);
-            if ($user !== null) {
-                $this->requireNotSuper($user);
-            }
-            $this->requireRolesGrantable($actor, $roles);
+            $this->recordingRefusals($actor, 'add_member', $territoryId, $subject, function () use ($actor, $territoryId, $user, $roles): void {
+                $this->requireAdministers($actor, $territoryId);
+                if ($user !== null) {
+                    $this->requireNotSuper($user);
+                }
+                $this->requireRolesGrantable($actor, $roles);
+            });
         } else {
             $this->requireTerritory($territoryId);
             $this->requireRolesExist($roles);
@@ -70,10 +75,15 @@ final class DelegatedAdministration implements TerritoryAdministration
         $this->store->putAssignment($territoryId, $type, $id, $level, $actor->userId);
 
         if ($user !== null && $roles !== []) {
+            $before = $user->explicitRoles()->map->handle()->values()->all();
+
             foreach ($roles as $role) {
                 $user->assignRole($role);
             }
             $user->save();
+
+            $this->audit->record('user.roles_set', $actor->userId, 'user', $id, $territoryId,
+                ['roles' => $before], ['roles' => $user->explicitRoles()->map->handle()->values()->all()]);
         }
     }
 
@@ -82,15 +92,17 @@ final class DelegatedAdministration implements TerritoryAdministration
         [$type, $id] = $this->parseSubject($subject);
 
         if (! $actor->isSuper) {
-            $this->requireAdministers($actor, $territoryId);
-            if ($type === 'user' && ($user = User::find($id)) !== null) {
-                $this->requireNotSuper($user);
-            }
+            $this->recordingRefusals($actor, 'remove_member', $territoryId, $subject, function () use ($actor, $territoryId, $type, $id): void {
+                $this->requireAdministers($actor, $territoryId);
+                if ($type === 'user' && ($user = User::find($id)) !== null) {
+                    $this->requireNotSuper($user);
+                }
+            });
         } else {
             $this->requireTerritory($territoryId);
         }
 
-        $this->store->deleteAssignment($territoryId, $type, $id);
+        $this->store->deleteAssignment($territoryId, $type, $id, $actor->userId);
     }
 
     public function setRoles(Actor $actor, string $userId, array $roles): void
@@ -99,9 +111,11 @@ final class DelegatedAdministration implements TerritoryAdministration
         $roles = array_values(array_unique($roles));
 
         if (! $actor->isSuper) {
-            $this->requireNotSuper($user);
-            $this->requireWhollyWithin($actor, $user);
-            $this->requireRolesGrantable($actor, $roles);
+            $this->recordingRefusals($actor, 'set_roles', null, 'user:'.$userId, function () use ($actor, $user, $roles): void {
+                $this->requireNotSuper($user);
+                $this->requireWhollyWithin($actor, $user);
+                $this->requireRolesGrantable($actor, $roles);
+            });
 
             // The actor decides only among the roles they hold. A role the
             // user already has that the actor does not hold is neither
@@ -117,7 +131,11 @@ final class DelegatedAdministration implements TerritoryAdministration
             $this->requireRolesExist($roles);
         }
 
+        $before = $user->explicitRoles()->map->handle()->values()->all();
+
         $user->explicitRoles($roles)->save();
+
+        $this->recordForUser($actor, 'user.roles_set', $user, ['roles' => $before], ['roles' => $roles]);
     }
 
     public function updateUser(Actor $actor, string $userId, array $attributes): void
@@ -125,9 +143,16 @@ final class DelegatedAdministration implements TerritoryAdministration
         $user = $this->requireUser($userId);
 
         if (! $actor->isSuper) {
-            $this->requireNotSuper($user);
-            $this->requireWhollyWithin($actor, $user);
-            $this->requireProfileAttributes($user, $attributes);
+            $this->recordingRefusals($actor, 'update_user', null, 'user:'.$userId, function () use ($actor, $user, $attributes): void {
+                $this->requireNotSuper($user);
+                $this->requireWhollyWithin($actor, $user);
+                $this->requireProfileAttributes($user, $attributes);
+            });
+        }
+
+        $before = [];
+        foreach (array_keys($attributes) as $key) {
+            $before[$key] = $key === 'email' ? $user->email() : ($key === 'super' ? $user->isSuper() : $user->get($key));
         }
 
         foreach ($attributes as $key => $value) {
@@ -141,6 +166,8 @@ final class DelegatedAdministration implements TerritoryAdministration
         }
 
         $user->save();
+
+        $this->recordForUser($actor, 'user.updated', $user, $before, $attributes);
     }
 
     public function deleteUser(Actor $actor, string $userId): void
@@ -148,20 +175,27 @@ final class DelegatedAdministration implements TerritoryAdministration
         $user = $this->requireUser($userId);
 
         if (! $actor->isSuper) {
-            $this->requireNotSuper($user);
-            $this->requireWhollyWithin($actor, $user);
+            $this->recordingRefusals($actor, 'delete_user', null, 'user:'.$userId, function () use ($actor, $user): void {
+                $this->requireNotSuper($user);
+                $this->requireWhollyWithin($actor, $user);
+            });
         }
+
+        // Record while the user still exists, so the row can say who they were.
+        $this->recordForUser($actor, 'user.deleted', $user, ['email' => $user->email(), 'name' => $user->name()], null);
 
         $user->delete();
 
-        $this->store->deleteAssignmentsForSubject('user', $userId);
+        $this->store->deleteAssignmentsForSubject('user', $userId, $actor->userId);
     }
 
     public function updateTerritory(Actor $actor, int $territoryId, array $changes): void
     {
         if (! $actor->isSuper) {
-            $this->requireAdministers($actor, $territoryId);
-            $this->requireTerritoryChangesAllowed($territoryId, $changes);
+            $this->recordingRefusals($actor, 'update_territory', $territoryId, 'territory:'.$territoryId, function () use ($actor, $territoryId, $changes): void {
+                $this->requireAdministers($actor, $territoryId);
+                $this->requireTerritoryChangesAllowed($territoryId, $changes);
+            });
         } else {
             $this->requireTerritory($territoryId);
             foreach (array_keys($changes) as $key) {
@@ -171,7 +205,7 @@ final class DelegatedAdministration implements TerritoryAdministration
             }
         }
 
-        $this->store->updateTerritory($territoryId, $changes);
+        $this->store->updateTerritory($territoryId, $changes, $actor->userId);
     }
 
     public function visibleUsers(Actor $actor): array
@@ -281,6 +315,51 @@ final class DelegatedAdministration implements TerritoryAdministration
 
         if ($outside) {
             throw EscalationDenied::userShared($user->id());
+        }
+    }
+
+    // ------------------------------------------------------------ audit
+
+    /**
+     * Runs the invariant checks for an operation; a refusal is recorded —
+     * which invariant, against what — and rethrown. The one kind of audit
+     * row that describes something that did not happen.
+     */
+    private function recordingRefusals(Actor $actor, string $operation, ?int $territoryId, string $target, callable $checks): void
+    {
+        try {
+            $checks();
+        } catch (EscalationDenied $e) {
+            [$type, $id] = array_pad(explode(':', $target, 2), 2, null);
+
+            $this->audit->record("refused.{$operation}", $actor->userId, $type ?? 'unknown', $id, $territoryId, null, [
+                'invariant' => $e->invariant,
+                'message' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * A change to a user belongs to every territory the user is in that the
+     * actor administers — for a wholly-owned user, each of their territories;
+     * for a super user acting, each territory the user is in at all.
+     *
+     * @param  array<string, mixed>|null  $before
+     * @param  array<string, mixed>|null  $after
+     */
+    private function recordForUser(Actor $actor, string $action, UserContract $user, ?array $before, ?array $after): void
+    {
+        $territories = collect($this->resolver->map()->assignmentsFor(Subjects::of($user)))->map->territoryId->unique();
+
+        if (! $actor->isSuper) {
+            $administered = $this->membership($actor)->administeredIds();
+            $territories = $territories->filter(fn (int $id): bool => in_array($id, $administered, true));
+        }
+
+        foreach ($territories->isEmpty() ? [null] : $territories->all() as $territoryId) {
+            $this->audit->record($action, $actor->userId, 'user', (string) $user->id(), $territoryId, $before, $after);
         }
     }
 

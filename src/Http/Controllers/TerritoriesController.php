@@ -54,6 +54,7 @@ final class TerritoriesController extends CpController
             'urls' => [
                 'store' => cp_route('delegated.territories.store'),
                 'index' => cp_route('delegated.territories.index'),
+                'audit' => cp_route('delegated.audit.index'),
             ],
         ];
 
@@ -66,7 +67,7 @@ final class TerritoriesController extends CpController
 
     public function store(TerritoryRequest $request): JsonResponse
     {
-        $id = $this->store->createTerritory($request->safe()->only(['name', 'slug', 'site', 'scope_type', 'scope_ref', 'parent_id']));
+        $id = $this->store->createTerritory($request->safe()->only(['name', 'slug', 'site', 'scope_type', 'scope_ref', 'parent_id']), (string) User::current()->id());
 
         return response()->json(['territory' => $this->territory($this->find($id)), 'territories' => $this->territories()], 201);
     }
@@ -75,7 +76,7 @@ final class TerritoriesController extends CpController
     {
         $existing = $this->find((int) $territory);
 
-        $this->store->updateTerritory($existing->id, $request->safe()->only(['name', 'slug', 'site', 'scope_type', 'scope_ref', 'parent_id']));
+        $this->store->updateTerritory($existing->id, $request->safe()->only(['name', 'slug', 'site', 'scope_type', 'scope_ref', 'parent_id']), (string) User::current()->id());
 
         return response()->json(['territory' => $this->territory($this->find($existing->id)), 'territories' => $this->territories()]);
     }
@@ -84,7 +85,7 @@ final class TerritoriesController extends CpController
     {
         $existing = $this->find((int) $territory);
 
-        $this->store->deleteTerritory($existing->id);
+        $this->store->deleteTerritory($existing->id, (string) User::current()->id());
 
         return response()->json(['territories' => $this->territories()]);
     }

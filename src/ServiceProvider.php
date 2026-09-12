@@ -7,6 +7,7 @@ namespace Bpmore\StatamicDelegated;
 use Bpmore\StatamicDelegated\Administration\DelegatedAdministration;
 use Bpmore\StatamicDelegated\Administration\TerritoryAdministration;
 use Bpmore\StatamicDelegated\Administration\Visibility;
+use Bpmore\StatamicDelegated\Audit\AuditLog;
 use Bpmore\StatamicDelegated\Enforcement\ClosesEntryOracles;
 use Bpmore\StatamicDelegated\Enforcement\GuardsEntryAbilities;
 use Bpmore\StatamicDelegated\Enforcement\GuardsEntryCreation;
@@ -96,15 +97,19 @@ class ServiceProvider extends AddonServiceProvider
             );
         });
 
+        $this->app->singleton(AuditLog::class, fn (Application $app): AuditLog => new AuditLog($app->make('db')));
+
         $this->app->singleton(TerritoryStore::class, fn (Application $app): TerritoryStore => new TerritoryStore(
             $app->make('db'),
             $app->make(TerritoryResolver::class),
+            $app->make(AuditLog::class),
         ));
 
         $this->app->singleton(TerritoryAdministration::class, fn (Application $app): TerritoryAdministration => new DelegatedAdministration(
             $app->make(TerritoryResolver::class),
             $app->make(TerritoryStore::class),
             $app->make(Visibility::class),
+            $app->make(AuditLog::class),
         ));
     }
 

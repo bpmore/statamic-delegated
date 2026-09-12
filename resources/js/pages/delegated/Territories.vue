@@ -2,6 +2,7 @@
 import { computed, getCurrentInstance, ref, watch } from 'vue';
 import { toast } from '@statamic/cms/api';
 import { Head } from '@statamic/cms/inertia';
+import AuditLogModal from '../../components/AuditLogModal.vue';
 import {
     Badge,
     Button,
@@ -48,6 +49,8 @@ const props = defineProps({
 // Statamic 6 puts its HTTP client on the Vue app: it carries the CSRF token
 // and the control panel's error handling.
 const { $axios } = getCurrentInstance().appContext.config.globalProperties;
+
+const auditOpen = ref(false);
 
 const territories = ref(props.territories);
 
@@ -219,6 +222,7 @@ async function removeMember(assignment) {
 
     <Header title="Territories" icon="users">
         <template #actions>
+            <Button variant="ghost" text="Activity" icon="history" @click="auditOpen = true" />
             <Button variant="primary" text="New territory" icon="plus" @click="openCreate" />
         </template>
     </Header>
@@ -374,4 +378,6 @@ async function removeMember(assignment) {
         Its assignments go with it. Territories nested under it become top-level territories.
         The content itself is not touched, but nobody but a super user will be able to reach it until it is covered again.
     </ConfirmationModal>
+
+    <AuditLogModal v-model:open="auditOpen" title="Activity across all territories" :url="urls.audit" />
 </template>

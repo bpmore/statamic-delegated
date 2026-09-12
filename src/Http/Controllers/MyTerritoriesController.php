@@ -242,6 +242,7 @@ final class MyTerritoriesController extends CpController
                 'update' => cp_route('delegated.my-territories.update', $t->id),
                 'members' => cp_route('delegated.my-territories.members.store', $t->id),
                 'roles' => cp_route('delegated.my-territories.members.roles', [$t->id, '__user__']),
+                'audit' => cp_route('delegated.my-territories.audit', $t->id),
             ],
         ];
     }

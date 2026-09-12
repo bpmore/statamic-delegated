@@ -45,7 +45,7 @@
 ## Phase 4 — Territory management
 - [x] CP screens: territories, assignments, membership — site-administration screen; clicked through in the host 2026-09-12
 - [x] Territory admin self-service, constrained by the Phase 2 invariants — backend and page built and tested; browser pass pending (session expired)
-- [ ] Audit log, scoped per territory
+- [x] Audit log, scoped per territory — written on every write and refusal, read site-wide and per territory with outside actors unnamed; browser pass pending (no CP session)
 - [ ] `delegated:doctor` — orphaned territories, entries with no owner
 
 ## Phase 5 — Hardening and ship
@@ -1015,3 +1015,56 @@ password to hand. A territory (`Cardiology`, `/cardiology`, id 2) with the `Test
 seeded in the host for the check: open `http://statamic-dev.test/cp/delegated/my-territories`
 as Test and try rename → add member by email (`(address removed)`) → roles → remove.
 Delete the territory from the Territories screen afterwards.
+
+### Phase 4.3 — Audit log, scoped per territory (2026-09-12)
+
+**What is written.** `Audit\AuditLog` has three public methods — `record`, `forTerritories`,
+`latest` — and a test pins that list plus the table's lack of `updated_at`, so append-only is
+structural, not a convention. `TerritoryStore` records every one of its writes with the actor
+passed in (controllers pass `User::current()->id()`; seeders may pass nothing → "the system"):
+`territory.created/updated/deleted` (updated carries **only the keys that changed**; deleted
+carries the full row plus its assignments list), `assignment.granted/changed/revoked` (nothing
+for a no-op re-grant at the same level; a user's deletion revokes with `because: user deleted`).
+`DelegatedAdministration` records `user.roles_set`, `user.updated` (changed attributes only) and
+`user.deleted` (before the user is gone, so the row still has their email), **one row per
+territory the user is in that the actor administers** — every territory for a super user, and a
+null territory if none. Every invariant check runs inside `recordingRefusals`, so an
+`EscalationDenied` leaves `refused.<operation>` with the invariant code and message in `after`
+before it is rethrown; nothing else is written for a refused call (tested).
+
+**Who reads what.** `Audit\AuditView` presents rows for a viewer. Site-wide: `GET
+cp/delegated/audit` behind `manage territories`, names everyone. Per territory: `GET
+cp/delegated/my-territories/{territory}/audit` for its admins and super users (404 for a
+territory that does not exist, 403 for anyone else, including a `manage territories` holder who
+does not administer it — they have the site-wide log). Spec §11's leak: a territory's rows can
+name an actor from outside it (a site administrator reshaping it, another territory's admin being
+refused), so the *actor* is shown by name only if they are in the viewer's invariant-6 visibility
+now, otherwise as "someone outside your territory" with no id. The *target* of one of the
+territory's own rows was in the territory when the row was written (that is what `territory_id`
+on the row means), so they are named even after leaving; the target of a `refused.*` row may be
+anyone, so it follows visibility. The viewer is "you"; a null actor "the system"; a missing user
+"a user who no longer exists". Payloads carry ids and levels, never names, except `user.*`
+before/after, which are the (then-visible) target's own attributes. The site-wide view redacts
+nothing: a `manage territories` holder who is not super would otherwise see nobody named, since
+their invariant-6 visibility is empty.
+
+**UI.** One component, `AuditLogModal` (fetches a URL, lists when/who/what/change, refusals in
+red with the message): "Activity" in the Territories header (site-wide) and per panel on My
+territories. Assets rebuilt and published to the host; the store→view round trip was run in the
+host through tinker (two renames of territory 2, read back as "you" — the host's `delegated_audit`
+now has two rows). **Browser pass still pending** for the same reason as 4.2: no CP session and no
+password to hand. The rows are there for whoever logs in.
+
+**Tests** (`AuditLogTest`, 11): territory create/update/delete before-and-after; assignment
+grant/change/revoke and no-op; administration's user rows per territory; user deletion order;
+four refusals naming four invariants with nothing else written; append-only by reflection and
+schema; site-wide gate (admin and member 403, manager and super 200); per-territory gate (admin
+and super 200, member / other admin / manager 403, own-vs-other territory, unknown 404);
+confinement to the territory newest-first with the removed target still named; outside actors
+redacted for the admin and named for the manager, including "the system" for a null actor; a
+refusal *by* an outsider shown to the territory with the outsider unnamed and their target named,
+and a refusal aimed outside belonging to no territory. 386 tests, Pint clean.
+
+**Caveat noted for `doctor` / docs:** the host's territory 2 predates audit writes, so its
+creation has no row. A site that adds Delegated to existing territories seeded another way has
+the same gap — the log starts when the addon does.

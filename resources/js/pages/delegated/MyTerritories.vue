@@ -2,6 +2,7 @@
 import { computed, getCurrentInstance, ref } from 'vue';
 import { toast } from '@statamic/cms/api';
 import { Head } from '@statamic/cms/inertia';
+import AuditLogModal from '../../components/AuditLogModal.vue';
 import {
     Badge,
     Button,
@@ -41,6 +42,11 @@ const props = defineProps({
 const { $axios } = getCurrentInstance().appContext.config.globalProperties;
 
 const territories = ref(props.territories);
+
+// ------------------------------------------------------------ activity
+
+const auditing = ref(null);
+const auditOpen = computed({ get: () => auditing.value !== null, set: (o) => { if (!o) auditing.value = null; } });
 
 const roleTitle = (handle) => props.grantableRoles.find((r) => r.handle === handle)?.title ?? handle;
 
@@ -167,6 +173,7 @@ async function saveRoles() {
     <div class="space-y-6">
         <Panel v-for="territory in territories" :key="territory.id" :heading="territory.name" :subheading="`${territory.scope_type.replace('_', ' ')} · ${territory.scope_ref}`">
             <div class="flex justify-end gap-2 mb-3">
+                <Button text="Activity" variant="ghost" size="sm" icon="history" @click="auditing = territory" />
                 <Button text="Rename" variant="ghost" size="sm" icon="pencil" @click="openRename(territory)" />
                 <Button text="Add member" variant="primary" size="sm" icon="plus" @click="openAdd(territory)" />
             </div>
@@ -218,6 +225,9 @@ async function saveRoles() {
             <Text v-else>Nobody is assigned yet.</Text>
         </Panel>
     </div>
+
+    <!-- Activity -->
+    <AuditLogModal v-model:open="auditOpen" :title="auditing ? `Activity in ${auditing.name}` : 'Activity'" :url="auditing?.urls.audit" />
 
     <!-- Rename -->
     <Modal v-model:open="renameOpen" title="Rename territory">

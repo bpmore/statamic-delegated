@@ -32,6 +32,22 @@ that; a confirmed cross-territory exposure is fixed or mitigated within 30 days.
 [`SECURITY.md`](SECURITY.md) has the full policy, including what is in and out
 of scope.
 
+## The audit log
+
+Every change Delegated makes is written to `delegated_audit` before anything
+else happens: territories created, changed and deleted; assignments granted,
+changed and revoked; a member's roles, attributes and deletion; and every
+request an invariant *refused*, with the invariant's name. The table has no
+`updated_at` and the code has no way to change or remove a row.
+
+A site administrator (`manage territories`) reads the whole log from the
+Territories screen. A territory admin reads their own territory's log from My
+territories — their rows, but an actor from outside the territory (a site
+administrator, say) appears as "someone outside your territory", never by name.
+
+The log begins when Delegated is installed; territories that existed before it
+have no creation row.
+
 ## Who Delegated does not restrict
 
 Some people bypass everything Delegated does, by design, and the product is safer

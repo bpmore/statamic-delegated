@@ -62,7 +62,7 @@ final class AssignmentsController extends CpController
             'subject_id' => ['required', 'string', 'max:191'],
         ]);
 
-        $this->store->deleteAssignment($id, $data['subject_type'], $data['subject_id']);
+        $this->store->deleteAssignment($id, $data['subject_type'], $data['subject_id'], (string) User::current()->id());
 
         return response()->json(['saved' => true]);
     }
