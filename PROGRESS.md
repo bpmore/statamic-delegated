@@ -35,7 +35,7 @@
   - [x] 3.2.b `duplicate_entry` — require `view` on the source; not offered on out-of-territory items
   - [x] 3.2.c Create under a parent — `_parent` (store) and `parent` (create screen) must land inside territory; preview.create and title-format.create turned out to carry no parent
   - [x] 3.2.d Structure tree GET — authorize the collection, prune branches outside territory
-  - [ ] 3.2.e Structure tree PATCH and flat reorder — moves confined to territory; `deletedEntries` checked
+  - [x] 3.2.e Structure tree PATCH and flat reorder — moves confined to territory; `deletedEntries` checked
   - [ ] 3.2.f Navigation tree GET and PATCH — linked entries outside territory hidden / not linkable
   - [ ] 3.2.g Relationship picker index — scope the fieldtype's query
   - [ ] 3.2.h Users listing — a territory admin holding `view users` sees only visible users
@@ -753,3 +753,35 @@ stored tree, the tree re-attaches it at the root but the driver's `uri` *column*
 which reads it) keeps the old value until a save — a state the CP's tree editor cannot produce.
 Comments and test names now say "root-level stray" instead of "orphan"; the SECURITY.md
 out-of-scope bullet and the 3.1 note are read in that light.
+
+### Phase 3.2.e — Tree PATCH and flat reorder (2026-09-11)
+
+**The real hazard on this surface is not the move check — it is that `CollectionTreeController::
+update` replaces the whole stored tree with whatever is submitted.** A territory user's editor
+holds the pruned view from 3.2.d; saving that as-is would throw away everything they could not
+see (and `validateTree` would re-attach it all at the root). So `Enforcement\GuardsStructureTreeUpdate`
+(middleware on the CP group, acting on `collections.tree.update` and `collections.entries.reorder`)
+runs `Enforcement\TreeMerge` first and hands the controller the **merged whole tree** in place of
+the request's. `TreeMerge` is pure (trees in, tree out, membership via a callable; 12 unit tests)
+and enforces: every submitted id was shown and every shown id is submitted or deleted (nothing
+appears, nothing quietly leaves — leaving a page out would be a move to the root by omission); a
+placeholder keeps its parent (outside entries never move); an inside entry may move only under
+another inside entry or stay under the parent it had — never to the root or under a placeholder;
+a deleted id must be inside **and so must every stored descendant** (Statamic deletes descendants
+with it — matters for term-shaped territories); dropped entries keep their place and subtrees,
+and the user's submitted order fills the slots their own entries occupied. Any refusal refuses the
+whole request with 403 before anything is written. Flat reorder: every submitted id must be
+inside, else 403 — which in practice means reordering a linear collection needs a territory
+covering the whole collection (a partial listing's page slice never matches the tree's, and the
+controller 409s).
+
+**Tested on both drivers** (9 × 2 HTTP scenarios + 12 unit): a reorder within the territory
+saves and the rest of the tree is byte-identical; a move under another inside page saves and the
+URI follows; a move to the root refused, tree unchanged; pulling `/oncology` under `/cardiology`
+(the Phase 0.1 escalation) refused; dropping a page without deleting refused; delete inside
+allowed, delete outside refused; a sub-branch member cannot move out from under their placeholder
+parent but can reorder within, and a sibling they never saw stays put; super exempt; flat reorder
+allowed for a collection territory, refused for a user with the permission but no claim.
+
+Pest trap hit a second time (a `beforeEach` inside a Support class never runs): the scenario
+class now exposes `setUp()` like the others. Recorded once more so the next surface avoids it.
