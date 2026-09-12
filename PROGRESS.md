@@ -49,7 +49,7 @@
 - [x] `delegated:doctor` — orphaned territories, entries with no owner, and the drift and misconfiguration recorded along the way
 
 ## Phase 5 — Hardening and ship
-- [ ] CI matrix axis on `statamic/cms` minor versions, not just PHP
+- [x] CI matrix axis on `statamic/cms` minor versions, not just PHP — 6.31 and 6.32, plus an advisory newest-6.x leg
 - [ ] `DECISIONS.md` recording the last verified Statamic version
 - [ ] README stating plainly: control panel only, not front-end, not the API surface you haven't covered
 - [ ] Re-run the Phase 0 inventory against the shipping version
@@ -1110,3 +1110,24 @@ named, super not listed, exit 1; admins with `edit users` directly and through a
 a member not reported; a tree naming a ghost; human output and `--json` shape. Two test-only
 artefacts: Statamic memoises a user's permissions per request (`PermissionCache::clear()`) and
 the Eloquent driver memoises `findByUri` (`Blink::flush()`) — neither matters to a CLI run.
+
+### Phase 5.1 — CI matrix on Statamic minors (2026-09-12)
+
+Packagist has 6.32.0 since the pin was set. Resolved it locally (`composer require
+statamic/cms:~6.32.0 --with-all-dependencies` — only `statamic/cms` moved), ran the suite: 397
+pass, and `npm run build` against 6.32's Vite plugin reproduces the committed bundle byte for
+byte. So the pin is widened to `>=6.31.0 <6.33.0` — a range of verified minors, not a caret —
+and the lock file resolves 6.32.0 (the host stays on 6.31.0; it has its own lock).
+
+`tests.yml`: the `tests` job is now PHP {8.3, 8.4} × Statamic {6.31, 6.32}. Each leg runs
+`composer require "statamic/cms:~<minor>.0" --with-all-dependencies` (narrowing within the pin;
+`composer update --with` refuses a constraint outside composer.json's, and `require` replaces
+it) and then greps `composer show` for exactly that minor before testing, so a leg cannot
+silently test the wrong version. Simulated the 6.31 leg locally the same way: downgrade, 397
+pass. A separate `next-minor` job with `continue-on-error: true` requires `^6.31` — whatever
+the newest 6.x is — and is the spec §7.3 re-verification cue: when it goes red, run the Phase 0
+inventory against that minor, fix what moved, add the minor to the matrix and the pin, and
+record it in `DECISIONS.md` (5.2). It cannot fail the branch.
+
+Not done: no run has happened on GitHub from here (no push in this session); the workflow was
+checked for shape only. **Owner action:** push and watch the first matrix run.

@@ -92,10 +92,11 @@ in `PROGRESS.md`'s inventory.
 - PHP 8.3 or later
 - Statamic 6 **Pro** — roles, permissions and more than one user are Pro features, and so
   is everything Delegated does
-- Statamic 6, within the range named in `composer.json`. The constraint is
-  deliberately not open-ended: the addon reaches into control-panel internals
-  that are not a published interface, so each minor is verified before the range
-  is widened.
+- Statamic 6, within the range named in `composer.json` — currently 6.31 and
+  6.32. The constraint is deliberately not open-ended: the addon reaches into
+  control-panel internals that are not a published interface, so CI runs the
+  suite against every minor in the range, and the range is widened only after
+  a new minor passes.
 
 ## Development
 

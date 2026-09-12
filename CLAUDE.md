@@ -24,10 +24,14 @@ when run with `SPIKE_DRIVER=eloquent`. Do not publish the driver's config into t
 
 ## Target platform — do not resolve to anything older
 
-- **Statamic:** `^6.0` — this addon targets Statamic 6. If a dependency resolves
+- **Statamic:** 6 only, pinned to the verified minors in `composer.json` (`>=6.31.0 <6.33.0`
+  as of 2026-09-12; the lock file resolves the newest of them). If a dependency resolves
   to `statamic/cms` 5.x, that is a bug: fix the constraint and re-resolve before doing any
   further work. Statamic 6 has a different control panel, Vue 3 + Inertia, and different
-  extension points; anything built against 5.x will have to be rewritten.
+  extension points; anything built against 5.x will have to be rewritten. CI runs the suite
+  on every minor in the range (`.github/workflows/tests.yml`); to widen the range, run the
+  suite on the new minor, add it to the matrix, and record it in `DECISIONS.md`. The host
+  site stays on its own `statamic/cms` version (6.31.0) — it is not upgraded from here.
 - **PHP:** `^8.3` — the spec said `^8.2`, but Laravel 13, the `statamic/statamic` skeleton and
   every release of `statamic/eloquent-driver` require 8.3, and the Eloquent driver must be in
   this repo's own test suite (Phase 3.1). Recorded in PROGRESS.md; reversible if 8.2 is needed.
