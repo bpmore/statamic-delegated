@@ -8,6 +8,7 @@ use Bpmore\StatamicDelegated\Administration\DelegatedAdministration;
 use Bpmore\StatamicDelegated\Administration\TerritoryAdministration;
 use Bpmore\StatamicDelegated\Enforcement\GuardsEntryAbilities;
 use Bpmore\StatamicDelegated\Enforcement\GuardsEntryCreation;
+use Bpmore\StatamicDelegated\Enforcement\GuardsNavigationTree;
 use Bpmore\StatamicDelegated\Enforcement\GuardsStructureTreeUpdate;
 use Bpmore\StatamicDelegated\Enforcement\PrunesStructureTree;
 use Bpmore\StatamicDelegated\Enforcement\ScopesEntryListings;
@@ -36,6 +37,7 @@ class ServiceProvider extends AddonServiceProvider
             GuardsEntryCreation::class,
             PrunesStructureTree::class,
             GuardsStructureTreeUpdate::class,
+            GuardsNavigationTree::class,
         ],
     ];
 

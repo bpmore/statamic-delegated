@@ -36,7 +36,7 @@
   - [x] 3.2.c Create under a parent — `_parent` (store) and `parent` (create screen) must land inside territory; preview.create and title-format.create turned out to carry no parent
   - [x] 3.2.d Structure tree GET — authorize the collection, prune branches outside territory
   - [x] 3.2.e Structure tree PATCH and flat reorder — moves confined to territory; `deletedEntries` checked
-  - [ ] 3.2.f Navigation tree GET and PATCH — linked entries outside territory hidden / not linkable
+  - [x] 3.2.f Navigation tree GET and PATCH — linked entries outside territory hidden / not linkable
   - [ ] 3.2.g Relationship picker index — scope the fieldtype's query
   - [ ] 3.2.h Users listing — a territory admin holding `view users` sees only visible users
   - [ ] 3.2.i Direct-URL oracles (`cp/edit/{id}`, `{entry}/{slug}` redirect) — 404 outside territory
@@ -785,3 +785,25 @@ allowed for a collection territory, refused for a user with the permission but n
 
 Pest trap hit a second time (a `beforeEach` inside a Support class never runs): the scenario
 class now exposes `setUp()` like the others. Recorded once more so the next surface avoids it.
+
+### Phase 3.2.f — Navigation tree GET and PATCH (2026-09-11)
+
+**Decision.** A navigation is public site structure, so its branches are not hidden; what a branch
+reveals *about the entry behind it* is what is protected. `Enforcement\GuardsNavigationTree`
+(middleware on the CP group for `navigation.tree.index` and `navigation.tree.update`): GET now
+requires `view` on the nav tree — the endpoint had no check at all (Phase 0.1 core gap) — and, for
+a territory user, redacts every entry-derived field of a branch linked to an outside entry
+(`entry_title`, `entry_blueprint`, `status`, `edit_url`, `redirect`, `collection`, `can_delete`),
+keeping the `url` only if the entry is published and therefore already public; the branch's own
+custom title stays; URL branches are nobody's content. PATCH refuses (403, nothing saved) a
+**new** branch or a **re-pointed** branch whose target is outside; a branch that keeps its stored
+target may be re-titled and moved — nav structure is governed by the nav's own `edit` permission
+(the Phase 0.1 decision, now stated in code). The nav page *editor* was already closed by the Gate
+in 3.2.a. `NavigationPagesController::update` only validates; the tree PATCH's `data` is the one
+write path for targets.
+
+**Tested on both drivers** (8 × 2): a nav-permission-less user → 403; every branch present with
+inside intact, published-outside redacted but URL kept, draft-outside redacted including URL,
+URL branch untouched; super sees all; new link to a draft outside → 403, branch count unchanged;
+re-point to outside → 403; new link to own entry → 200; re-title and move an outside-linked
+branch → 200 with the target unchanged; super may link anything.

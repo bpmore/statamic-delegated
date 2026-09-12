@@ -30,7 +30,7 @@ final class AbilityScoping
             'access cp',
             'view pages entries', 'edit pages entries', 'create pages entries', 'publish pages entries', 'delete pages entries', 'reorder pages entries',
             'view news entries', 'edit news entries', 'create news entries',
-            'view main nav',
+            'view main nav', 'edit main nav',
         ]);
 
         $cardiology = Site::territory('cardiology', '/cardiology');
