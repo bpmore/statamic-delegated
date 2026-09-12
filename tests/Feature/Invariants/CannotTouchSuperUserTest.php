@@ -65,21 +65,21 @@ it('refuses to edit a super user, and changes nothing', function () {
     }
 
     superIsUntouched();
-})->todo();
+});
 
 it('refuses to change a super user\'s email, which is the account', function () {
     expect(fn () => app(TerritoryAdministration::class)->updateUser(Site::actor('head'), 'root', ['email' => 'head@example.com']))
         ->toThrow(EscalationDenied::class);
 
     superIsUntouched();
-})->todo();
+});
 
 it('refuses to demote a super user by clearing the flag', function () {
     expect(fn () => app(TerritoryAdministration::class)->updateUser(Site::actor('head'), 'root', ['super' => false]))
         ->toThrow(EscalationDenied::class);
 
     superIsUntouched();
-})->todo();
+});
 
 it('refuses to change a super user\'s roles, even to roles the admin holds', function () {
     // Invariant 1 would allow these roles. Invariant 3 refuses the target.
@@ -90,14 +90,14 @@ it('refuses to change a super user\'s roles, even to roles the admin holds', fun
         ->toThrow(EscalationDenied::class);
 
     superIsUntouched();
-})->todo();
+});
 
 it('refuses to delete a super user', function () {
     expect(fn () => app(TerritoryAdministration::class)->deleteUser(Site::actor('head'), 'root'))
         ->toThrow(EscalationDenied::class);
 
     superIsUntouched();
-})->todo();
+});
 
 it('refuses to remove a super user from the territory, or add one to it', function () {
     // Neither would escalate anything — a super user needs no membership —
@@ -114,7 +114,7 @@ it('refuses to remove a super user from the territory, or add one to it', functi
         ->toThrow(EscalationDenied::class);
 
     expect(Site::assignments())->toHaveCount(2);
-})->todo();
+});
 
 it('refuses a super user the admin cannot even see', function () {
     // No overlapping assignment, so invariant 6 also applies. Whichever
@@ -129,7 +129,7 @@ it('refuses a super user the admin cannot even see', function () {
 
     expect(User::find('root2'))->not->toBeNull()
         ->and(User::find('root2')->get('name'))->toBe('Second Root');
-})->todo();
+});
 
 it('refuses to make anyone super', function () {
     // Demote and promote are the same flag. A territory admin who could set
@@ -146,7 +146,7 @@ it('refuses to make anyone super', function () {
 
     expect(User::find('newbie')->isSuper())->toBeFalse()
         ->and(User::find('newbie')->get('name'))->toBeNull();
-})->todo();
+});
 
 it('still lets the admin edit an ordinary member, so the refusals above are about the target', function () {
     Site::assign($this->cardiology, 'user:newbie');
@@ -154,7 +154,7 @@ it('still lets the admin edit an ordinary member, so the refusals above are abou
     app(TerritoryAdministration::class)->updateUser(Site::actor('head'), 'newbie', ['name' => 'New Colleague']);
 
     expect(User::find('newbie')->get('name'))->toBe('New Colleague');
-})->todo();
+});
 
 it('does not apply to a super user acting on another', function () {
     Site::user('root2', super: true);
@@ -162,4 +162,21 @@ it('does not apply to a super user acting on another', function () {
     app(TerritoryAdministration::class)->updateUser(Site::actor('root2'), 'root', ['name' => 'Renamed By Peer']);
 
     expect(User::find('root')->get('name'))->toBe('Renamed By Peer');
-})->todo();
+});
+
+it('refuses to set credentials or identity on anyone, which would be taking the account', function (string $attribute) {
+    // Not the super flag and not a role, so neither invariant 3 nor 4 names
+    // it — but a territory admin who can set a colleague's password owns
+    // the colleague's account, and everything it can reach.
+    Site::assign($this->cardiology, 'user:newbie');
+    $before = User::find('newbie')->data()->all();
+
+    try {
+        app(TerritoryAdministration::class)->updateUser(Site::actor('head'), 'newbie', ['name' => 'N', $attribute => 'x']);
+        $this->fail('not refused');
+    } catch (EscalationDenied $e) {
+        expect($e->invariant)->toBe(EscalationDenied::RESERVED_ATTRIBUTE);
+    }
+
+    expect(User::find('newbie')->data()->all())->toBe($before);
+})->with(['password', 'password_hash', 'remember_token', 'two_factor_secret', 'two_factor_confirmed_at', 'passkeys', 'id']);

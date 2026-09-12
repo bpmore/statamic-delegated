@@ -47,7 +47,7 @@ it('lets an admin grant a role they hold', function () {
 
     expect(Site::rolesOf('newbie'))->toBe(['cardiology-editor'])
         ->and(Site::assignments())->toContain(['territory_id' => $this->cardiology, 'subject' => 'user:newbie', 'level' => 'member']);
-})->todo();
+});
 
 it('refuses a role the admin does not hold, and writes nothing', function () {
     $attempt = fn () => administration()->addMember(Site::actor('head'), $this->cardiology, 'user:newbie', Level::Member, ['site-admin']);
@@ -63,7 +63,7 @@ it('refuses a role the admin does not hold, and writes nothing', function () {
     // No role, and no membership either: the request is refused whole.
     expect(Site::rolesOf('newbie'))->toBe([])
         ->and(Site::assignments())->not->toContain(['territory_id' => $this->cardiology, 'subject' => 'user:newbie', 'level' => 'member']);
-})->todo();
+});
 
 it('refuses the whole request when one of several roles is not held', function () {
     // No partial grant: the held role is not applied while the other is
@@ -74,7 +74,7 @@ it('refuses the whole request when one of several roles is not held', function (
 
     expect(Site::rolesOf('newbie'))->toBe([])
         ->and(Site::assignments())->toHaveCount(1);
-})->todo();
+});
 
 it('refuses to change an existing member to a role the admin does not hold', function () {
     Site::assign($this->cardiology, 'user:newbie');
@@ -83,14 +83,14 @@ it('refuses to change an existing member to a role the admin does not hold', fun
         ->toThrow(EscalationDenied::class);
 
     expect(Site::rolesOf('newbie'))->toBe([]);
-})->todo();
+});
 
 it('refuses even when the role is one the admin is trying to give themselves', function () {
     expect(fn () => administration()->setRoles(Site::actor('head'), 'head', ['cardiology-editor', 'site-admin']))
         ->toThrow(EscalationDenied::class);
 
     expect(Site::rolesOf('head'))->toBe(['cardiology-editor']);
-})->todo();
+});
 
 it('counts a role held through a group as held', function () {
     Site::group('cardiology-heads', roles: ['news-editor']);
@@ -100,7 +100,7 @@ it('counts a role held through a group as held', function () {
     administration()->addMember(Site::actor('head-via-group'), $this->cardiology, 'user:newbie', Level::Member, ['news-editor']);
 
     expect(Site::rolesOf('newbie'))->toBe(['news-editor']);
-})->todo();
+});
 
 it('does not count a role the group holds if the admin is not in the group', function () {
     Site::group('cardiology-heads', roles: ['news-editor']);
@@ -109,14 +109,14 @@ it('does not count a role the group holds if the admin is not in the group', fun
         ->toThrow(EscalationDenied::class);
 
     expect(Site::rolesOf('newbie'))->toBe([]);
-})->todo();
+});
 
 it('refuses a role that does not exist rather than treating it as harmless', function () {
     expect(fn () => administration()->addMember(Site::actor('head'), $this->cardiology, 'user:newbie', Level::Member, ['no-such-role']))
         ->toThrow(EscalationDenied::class);
 
     expect(Site::assignments())->toHaveCount(1);
-})->todo();
+});
 
 it('does not apply to a super user', function () {
     // Super users bypass everything by design (spec §8). The invariant
@@ -126,4 +126,4 @@ it('does not apply to a super user', function () {
     administration()->addMember(Site::actor('root'), $this->cardiology, 'user:newbie', Level::Member, ['site-admin']);
 
     expect(Site::rolesOf('newbie'))->toBe(['site-admin']);
-})->todo();
+});

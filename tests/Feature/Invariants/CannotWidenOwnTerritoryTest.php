@@ -60,7 +60,7 @@ it('lets an admin rename their territory, so the refusals below are about scope'
 
     expect(territoryRow($this->cardiology)->name)->toBe('Cardiology & Vascular')
         ->and(scopeOf($this->cardiology))->toBe(['site' => 'default', 'scope_type' => 'structure_branch', 'scope_ref' => '/cardiology', 'parent_id' => $this->root]);
-})->todo();
+});
 
 it('refuses to widen the branch to the root, and changes nothing', function () {
     $before = scopeOf($this->cardiology);
@@ -75,7 +75,7 @@ it('refuses to widen the branch to the root, and changes nothing', function () {
     }
 
     expect(scopeOf($this->cardiology))->toBe($before);
-})->todo();
+});
 
 it('refuses to move the branch sideways', function () {
     // Not wider, but not theirs: /oncology's content is exactly what the
@@ -86,7 +86,7 @@ it('refuses to move the branch sideways', function () {
         ->toThrow(EscalationDenied::class);
 
     expect(scopeOf($this->cardiology))->toBe($before);
-})->todo();
+});
 
 it('refuses even to narrow the branch', function () {
     // Narrowing looks harmless. It is refused because "scope is immutable to
@@ -99,7 +99,7 @@ it('refuses even to narrow the branch', function () {
         ->toThrow(EscalationDenied::class);
 
     expect(scopeOf($this->cardiology))->toBe($before);
-})->todo();
+});
 
 it('refuses to change the kind of scope', function () {
     // A branch becoming a collection is the whole collection.
@@ -112,7 +112,7 @@ it('refuses to change the kind of scope', function () {
         ->toThrow(EscalationDenied::class);
 
     expect(scopeOf($this->cardiology))->toBe($before);
-})->todo();
+});
 
 it('refuses to re-parent their own territory', function () {
     $before = scopeOf($this->cardiology);
@@ -123,7 +123,7 @@ it('refuses to re-parent their own territory', function () {
     }
 
     expect(scopeOf($this->cardiology))->toBe($before);
-})->todo();
+});
 
 it('refuses to make another territory a child of theirs', function () {
     // Administration flows down (Phase 1.4). Parenting oncology under
@@ -134,7 +134,7 @@ it('refuses to make another territory a child of theirs', function () {
         ->toThrow(EscalationDenied::class);
 
     expect(scopeOf($this->oncology))->toBe($before);
-})->todo();
+});
 
 it('refuses to widen a child territory they administer', function () {
     // Widening /cardiology/trials to / widens what flows down to its
@@ -148,7 +148,7 @@ it('refuses to widen a child territory they administer', function () {
         ->toThrow(EscalationDenied::class);
 
     expect(scopeOf($this->trials))->toBe($before);
-})->todo();
+});
 
 it('refuses to move the territory to another site', function () {
     $before = scopeOf($this->cardiology);
@@ -157,7 +157,7 @@ it('refuses to move the territory to another site', function () {
         ->toThrow(EscalationDenied::class);
 
     expect(scopeOf($this->cardiology))->toBe($before);
-})->todo();
+});
 
 it('refuses the whole request when a rename is mixed with a scope change', function () {
     $before = scopeOf($this->cardiology);
@@ -167,7 +167,7 @@ it('refuses the whole request when a rename is mixed with a scope change', funct
 
     expect(territoryRow($this->cardiology)->name)->toBe('Cardiology')
         ->and(scopeOf($this->cardiology))->toBe($before);
-})->todo();
+});
 
 it('refuses a change it does not recognise rather than treating it as harmless', function () {
     expect(fn () => app(TerritoryAdministration::class)->updateTerritory(Site::actor('head'), $this->cardiology, ['id' => $this->root]))
@@ -177,14 +177,14 @@ it('refuses a change it does not recognise rather than treating it as harmless',
         ->toThrow(EscalationDenied::class);
 
     expect(territoryRow($this->cardiology)->id)->toBe($this->cardiology);
-})->todo();
+});
 
 it('refuses a member who is not an admin, even a rename', function () {
     expect(fn () => app(TerritoryAdministration::class)->updateTerritory(Site::actor('staff'), $this->cardiology, ['name' => 'Mine Now']))
         ->toThrow(EscalationDenied::class);
 
     expect(territoryRow($this->cardiology)->name)->toBe('Cardiology');
-})->todo();
+});
 
 it('refuses a territory the admin does not administer, even a rename', function () {
     expect(fn () => app(TerritoryAdministration::class)->updateTerritory(Site::actor('head'), $this->oncology, ['name' => 'Cardiology Annex']))
@@ -195,12 +195,14 @@ it('refuses a territory the admin does not administer, even a rename', function 
 
     expect(territoryRow($this->oncology)->name)->toBe('Oncology')
         ->and(territoryRow($this->root)->name)->toBe('Site');
-})->todo();
+});
 
 it('does not apply to a super user', function () {
     Site::user('root', super: true);
 
-    app(TerritoryAdministration::class)->updateTerritory(Site::actor('root'), $this->cardiology, ['scope_ref' => '/', 'parent_id' => null]);
+    // The whole collection: wider than the branch, and not a scope another
+    // territory already owns (the unique index would refuse that, rightly).
+    app(TerritoryAdministration::class)->updateTerritory(Site::actor('root'), $this->cardiology, ['scope_type' => 'collection', 'scope_ref' => 'Pages', 'parent_id' => null]);
 
-    expect(scopeOf($this->cardiology))->toBe(['site' => 'default', 'scope_type' => 'structure_branch', 'scope_ref' => '/', 'parent_id' => null]);
-})->todo();
+    expect(scopeOf($this->cardiology))->toBe(['site' => 'default', 'scope_type' => 'collection', 'scope_ref' => 'pages', 'parent_id' => null]);
+});

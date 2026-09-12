@@ -31,6 +31,8 @@ final class EscalationDenied extends RuntimeException
 
     public const USER_SHARED = 'user_shared';
 
+    public const RESERVED_ATTRIBUTE = 'reserved_attribute';
+
     private function __construct(public readonly string $invariant, string $message)
     {
         parent::__construct($message);
@@ -52,19 +54,34 @@ final class EscalationDenied extends RuntimeException
         return new self(self::SUPER_USER, "Cannot edit, demote or delete super user {$userId}");
     }
 
+    /** The same flag, the other direction. */
+    public static function promotion(string $userId): self
+    {
+        return new self(self::SUPER_USER, "Cannot make user {$userId} a super user");
+    }
+
     public static function roleManagement(): self
     {
         return new self(self::ROLE_MANAGEMENT, 'Cannot create or modify roles, or grant a role that could');
     }
 
-    public static function ownTerritory(int $territoryId): self
+    public static function ownTerritory(int $territoryId, string $change): self
     {
-        return new self(self::OWN_TERRITORY, "Cannot widen territory {$territoryId}: the actor belongs to it");
+        return new self(self::OWN_TERRITORY, "Cannot change '{$change}' of territory {$territoryId}: a territory's scope is immutable to the people who administer it");
     }
 
     public static function userNotVisible(string $userId): self
     {
         return new self(self::USER_NOT_VISIBLE, "Cannot act on user {$userId}: no assignment overlaps the actor's territories");
+    }
+
+    /**
+     * Credentials and identity are not profile fields. A territory admin who
+     * could set a colleague's password would own the account.
+     */
+    public static function reservedAttribute(string $userId, string $attribute): self
+    {
+        return new self(self::RESERVED_ATTRIBUTE, "Cannot set '{$attribute}' on user {$userId} through delegated administration");
     }
 
     /**

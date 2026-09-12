@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Bpmore\StatamicDelegated\Administration\EscalationDenied;
 use Bpmore\StatamicDelegated\Administration\TerritoryAdministration;
+use Bpmore\StatamicDelegated\Territories\Level;
 use Bpmore\StatamicDelegated\Tests\Support\Site;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Statamic\Facades\User;
@@ -76,13 +77,13 @@ function visible(string $actor): array
 
 it('shows an admin exactly the users assigned, directly or through a group, to their territory or below it', function () {
     expect(visible('head'))->toBe(['direct', 'head', 'in-trials', 'shared', 'staff', 'via-group']);
-})->todo();
+});
 
 it('shows nothing to a member who administers nothing', function () {
     // The user-management surface is for admins. A member has no reason to
     // see a list of colleagues' accounts, so they do not get one.
     expect(visible('staff'))->toBe([]);
-})->todo();
+});
 
 it('shows the same to an admin whose administration comes through a group', function () {
     Site::group('cardiology-heads');
@@ -90,14 +91,14 @@ it('shows the same to an admin whose administration comes through a group', func
     Site::user('head-via-group', roles: ['editor'], groups: ['cardiology-heads']);
 
     expect(visible('head-via-group'))->toBe(['direct', 'head', 'head-via-group', 'in-trials', 'shared', 'staff', 'via-group']);
-})->todo();
+});
 
 it('never shows a user assigned only above the admin\'s territory', function () {
     // Downward only. The site-wide editor's membership flows down into
     // cardiology, but the head of cardiology does not get to act on the
     // people who administer them.
     expect(visible('head'))->not->toContain('site-wide');
-})->todo();
+});
 
 it('refuses to edit, delete or change the roles of a user it cannot see, and changes nothing', function (string $userId) {
     $administration = app(TerritoryAdministration::class);
@@ -116,7 +117,7 @@ it('refuses to edit, delete or change the roles of a user it cannot see, and cha
 
     expect(User::find($userId))->not->toBeNull("{$userId} was deleted")
         ->and(User::find($userId)->data()->all())->toBe($before);
-})->with(INVISIBLE)->todo();
+})->with(INVISIBLE);
 
 it('names the invariant when it refuses an invisible ordinary user', function () {
     try {
@@ -125,7 +126,7 @@ it('names the invariant when it refuses an invisible ordinary user', function ()
     } catch (EscalationDenied $e) {
         expect($e->invariant)->toBe(EscalationDenied::USER_NOT_VISIBLE);
     }
-})->todo();
+});
 
 it('shows a shared user but refuses to change them', function () {
     // Visible: they are in cardiology. Read-only: they are also in oncology,
@@ -150,7 +151,7 @@ it('shows a shared user but refuses to change them', function () {
     expect(User::find('shared'))->not->toBeNull()
         ->and(User::find('shared')->get('name'))->toBeNull()
         ->and(Site::rolesOf('shared'))->toBe(['editor']);
-})->todo();
+});
 
 it('still lets the admin remove a shared user from their own territory', function () {
     // That is within cardiology, and leaves oncology's membership alone.
@@ -160,7 +161,7 @@ it('still lets the admin remove a shared user from their own territory', functio
 
     expect($remaining)->toBe([['territory_id' => $this->oncology, 'subject' => 'user:shared', 'level' => 'member']])
         ->and(visible('head'))->not->toContain('shared');
-})->todo();
+});
 
 it('lets the admin change and delete a user who is wholly theirs, so the refusals are about overlap', function () {
     $administration = app(TerritoryAdministration::class);
@@ -171,7 +172,7 @@ it('lets the admin change and delete a user who is wholly theirs, so the refusal
     $administration->deleteUser(Site::actor('head'), 'direct');
     expect(User::find('direct'))->toBeNull()
         ->and(visible('head'))->not->toContain('direct');
-})->todo();
+});
 
 it('stops showing a user as soon as their overlapping assignment is gone', function () {
     app(TerritoryAdministration::class)->removeMember(Site::actor('head'), $this->trials, 'user:in-trials');
@@ -180,7 +181,7 @@ it('stops showing a user as soon as their overlapping assignment is gone', funct
 
     expect(fn () => app(TerritoryAdministration::class)->updateUser(Site::actor('head'), 'in-trials', ['name' => 'x']))
         ->toThrow(EscalationDenied::class);
-})->todo();
+});
 
 it('does not apply to a super user, who sees everyone', function () {
     expect(visible('root'))->toBe([
@@ -189,4 +190,28 @@ it('does not apply to a super user, who sees everyone', function () {
 
     app(TerritoryAdministration::class)->updateUser(Site::actor('root'), 'onc-only', ['name' => 'Seen By Root']);
     expect(User::find('onc-only')->get('name'))->toBe('Seen By Root');
-})->todo();
+});
+
+it('removes every assignment that named a deleted user', function () {
+    Site::assign($this->trials, 'user:direct');
+
+    app(TerritoryAdministration::class)->deleteUser(Site::actor('head'), 'direct');
+
+    expect(array_filter(Site::assignments(), fn (array $a): bool => $a['subject'] === 'user:direct'))->toBe([]);
+});
+
+it('rejects a malformed subject outright', function (string $subject) {
+    expect(fn () => app(TerritoryAdministration::class)->addMember(Site::actor('head'), $this->cardiology, $subject, Level::Member))
+        ->toThrow(InvalidArgumentException::class);
+})->with(['direct', 'user:', 'role:editor', ':direct', '']);
+
+it('rejects a user or group that does not exist, before any invariant is consulted', function () {
+    // Not an escalation — a bad request — but a request that writes nothing.
+    expect(fn () => app(TerritoryAdministration::class)->addMember(Site::actor('head'), $this->cardiology, 'user:ghost', Level::Member))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(fn () => app(TerritoryAdministration::class)->addMember(Site::actor('head'), $this->cardiology, 'group:ghosts', Level::Member))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(array_filter(Site::assignments(), fn (array $a): bool => str_contains($a['subject'], 'ghost')))->toBe([]);
+});

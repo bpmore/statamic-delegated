@@ -297,3 +297,43 @@ it('answers the question the policy layer asks: does the user reach this content
         ->and($membership->coversAny($map->containing(page('/finance'))))->toBeFalse()
         ->and($membership->coversAny($map->containing(new ContentFacts('default', 'pages', null))))->toBeFalse();
 });
+
+// ------------------------------------------------------------ administration views
+
+it('lists a subject\'s assignments as written, without inheritance', function () {
+    $map = new TerritoryMap([
+        branch(1, '/cardiology'),
+        branch(2, '/cardiology/trials', parent: 1),
+    ], [
+        new Assignment(1, 'group:cardiology', Level::Admin),
+        new Assignment(2, 'user:u1', Level::Member),
+        new Assignment(999, 'user:u1', Level::Admin),
+    ]);
+
+    $written = $map->assignmentsFor(['user:u1', 'group:cardiology', 'user:nobody']);
+
+    expect(array_map(fn (Assignment $a): string => "{$a->territoryId}:{$a->subject}:{$a->level->value}", $written))
+        ->toEqualCanonicalizing(['2:user:u1:member', '1:group:cardiology:admin'])
+        // Membership would say the group is in 2 as well. Assignments do not.
+        ->and($map->membershipFor(['group:cardiology'])->has(2))->toBeTrue();
+});
+
+it('lists the subjects assigned to given territories, as written', function () {
+    $map = new TerritoryMap([
+        branch(1, '/cardiology'),
+        branch(2, '/cardiology/trials', parent: 1),
+        branch(3, '/oncology'),
+    ], [
+        new Assignment(1, 'group:cardiology', Level::Admin),
+        new Assignment(1, 'user:head', Level::Admin),
+        new Assignment(2, 'user:trials-only', Level::Member),
+        new Assignment(3, 'user:onc', Level::Member),
+        new Assignment(1, 'user:both', Level::Member),
+        new Assignment(3, 'user:both', Level::Member),
+    ]);
+
+    expect($map->subjectsIn([1, 2]))->toEqualCanonicalizing(['group:cardiology', 'user:head', 'user:trials-only', 'user:both'])
+        ->and($map->subjectsIn([2]))->toBe(['user:trials-only'])
+        ->and($map->subjectsIn([]))->toBe([])
+        ->and($map->subjectsIn([999]))->toBe([]);
+});

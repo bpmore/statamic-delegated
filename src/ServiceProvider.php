@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Bpmore\StatamicDelegated;
 
+use Bpmore\StatamicDelegated\Administration\DelegatedAdministration;
+use Bpmore\StatamicDelegated\Administration\TerritoryAdministration;
 use Bpmore\StatamicDelegated\Resolution\DatabaseTerritorySource;
 use Bpmore\StatamicDelegated\Resolution\TerritoryResolver;
 use Bpmore\StatamicDelegated\Resolution\TerritorySource;
+use Bpmore\StatamicDelegated\Storage\TerritoryStore;
 use Illuminate\Contracts\Foundation\Application;
 use Statamic\Providers\AddonServiceProvider;
 
@@ -40,6 +43,16 @@ class ServiceProvider extends AddonServiceProvider
                 $ttl === null ? null : (int) $ttl,
             );
         });
+
+        $this->app->singleton(TerritoryStore::class, fn (Application $app): TerritoryStore => new TerritoryStore(
+            $app->make('db'),
+            $app->make(TerritoryResolver::class),
+        ));
+
+        $this->app->singleton(TerritoryAdministration::class, fn (Application $app): TerritoryAdministration => new DelegatedAdministration(
+            $app->make(TerritoryResolver::class),
+            $app->make(TerritoryStore::class),
+        ));
     }
 
     public function bootAddon(): void

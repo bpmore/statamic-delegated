@@ -23,8 +23,10 @@ uses(RefreshDatabase::class);
  * it to everyone the head ever adds.
  */
 
+// `super` is not in this list because a role that carries it makes its
+// holder a super user, to whom the invariants do not apply. It has its own
+// test below.
 const MANAGEMENT_PERMISSIONS = [
-    'super',
     'edit roles',
     'edit user groups',
     'edit users',
@@ -96,7 +98,25 @@ it('refuses to grant a role that carries a management permission, even one the a
 
     expect(Site::rolesOf('newbie'))->toBe([])
         ->and(Site::assignments())->toHaveCount(3);
-})->with(MANAGEMENT_PERMISSIONS)->todo();
+})->with(MANAGEMENT_PERMISSIONS);
+
+it('refuses to grant a role that carries super, which nobody short of a super user can hold', function () {
+    // Holding a role with `super` *is* being super (User::isSuper checks the
+    // permission), so "even one the admin holds" cannot arise. What can: a
+    // super user creates such a role, and a territory admin tries to hand
+    // it out. Not held, so invariant 1 refuses; the role is never granted.
+    Site::role('godmode', ['super']);
+
+    expect(fn () => app(TerritoryAdministration::class)->addMember(Site::actor('head'), $this->cardiology, 'user:newbie', Level::Member, ['godmode']))
+        ->toThrow(EscalationDenied::class);
+
+    expect(fn () => app(TerritoryAdministration::class)->setRoles(Site::actor('head'), 'member', ['godmode']))
+        ->toThrow(EscalationDenied::class);
+
+    expect(Site::rolesOf('newbie'))->toBe([])
+        ->and(Site::rolesOf('member'))->toBe(['cardiology-editor'])
+        ->and(User::find('newbie')->isSuper())->toBeFalse();
+});
 
 it('refuses the same through setRoles on an existing member', function (string $permission) {
     Site::role('dangerous', ['access cp', $permission]);
@@ -107,7 +127,7 @@ it('refuses the same through setRoles on an existing member', function (string $
         ->toThrow(EscalationDenied::class);
 
     expect(Site::rolesOf('member'))->toBe(['cardiology-editor']);
-})->with(['super', 'edit roles', 'edit users', 'configure collections'])->todo();
+})->with(['edit roles', 'edit users', 'configure collections']);
 
 it('refuses a role that is harmless today but is edited to be dangerous later', function () {
     // The check is on the role's permissions at the time of the grant, not
@@ -126,7 +146,7 @@ it('refuses a role that is harmless today but is edited to be dangerous later', 
         ->toThrow(EscalationDenied::class);
 
     expect(Site::rolesOf('newbie2'))->toBe([]);
-})->todo();
+});
 
 it('refuses role or group changes smuggled through updateUser', function () {
     // updateUser edits profile fields. Roles go through setRoles, where
@@ -142,13 +162,13 @@ it('refuses role or group changes smuggled through updateUser', function () {
 
     expect(Site::rolesOf('member'))->toBe(['cardiology-editor'])
         ->and(User::find('member')->get('name'))->toBeNull();
-})->todo();
+});
 
 it('still lets the admin grant an ordinary role they hold, so the refusals are about the permissions', function () {
     app(TerritoryAdministration::class)->addMember(Site::actor('head'), $this->cardiology, 'user:newbie', Level::Member, ['cardiology-editor']);
 
     expect(Site::rolesOf('newbie'))->toBe(['cardiology-editor']);
-})->todo();
+});
 
 it('does not apply to a super user', function () {
     Site::role('role-admin', ['access cp', 'edit roles']);
@@ -157,4 +177,4 @@ it('does not apply to a super user', function () {
     app(TerritoryAdministration::class)->addMember(Site::actor('root'), $this->cardiology, 'user:newbie', Level::Member, ['role-admin']);
 
     expect(Site::rolesOf('newbie'))->toBe(['role-admin']);
-})->todo();
+});

@@ -161,6 +161,51 @@ final class TerritoryMap
     // ------------------------------------------------------------ subjects
 
     /**
+     * The assignments the subjects hold, as written — before inheritance.
+     * What an administrator sees when asking "where is this person listed".
+     *
+     * @param  list<string>  $subjects
+     * @return list<Assignment>
+     */
+    public function assignmentsFor(array $subjects): array
+    {
+        $out = [];
+
+        foreach (array_unique($subjects) as $subject) {
+            foreach ($this->bySubject[$subject] ?? [] as $assignment) {
+                $out[] = $assignment;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Every subject with an assignment, as written, to any of the given
+     * territories. Inheritance is not applied: a subject assigned to a
+     * parent is not listed under the child.
+     *
+     * @param  list<int>  $territoryIds
+     * @return list<string>
+     */
+    public function subjectsIn(array $territoryIds): array
+    {
+        $wanted = array_flip($territoryIds);
+        $out = [];
+
+        foreach ($this->bySubject as $subject => $assignments) {
+            foreach ($assignments as $assignment) {
+                if (isset($wanted[$assignment->territoryId])) {
+                    $out[$subject] = true;
+                    break;
+                }
+            }
+        }
+
+        return array_keys($out);
+    }
+
+    /**
      * Which territories the subjects are in, and at what level.
      *
      * Membership is the union over every subject (a user in two departments

@@ -20,13 +20,13 @@
 - [x] Territory resolution service with caching, unit-tested, no CP booted
 
 ## Phase 2 — Escalation invariants (tests before features)
-- [x] Cannot grant a role they do not hold — written failing, parked as `todo` until 2.7
-- [x] Cannot add a user to a territory they do not administer — written failing, parked as `todo` until 2.7
-- [x] Cannot edit, demote or delete a super user — written failing, parked as `todo` until 2.7
-- [x] Cannot create or modify roles — structural half passing now; behavioural half written failing, parked as `todo` until 2.7
-- [x] Cannot widen their own territory — written failing, parked as `todo` until 2.7
-- [x] Cannot see users with no overlapping assignment — written failing, parked as `todo` until 2.7
-- [ ] All six failing, then all six passing
+- [x] Cannot grant a role they do not hold — passing (2.7)
+- [x] Cannot add a user to a territory they do not administer — passing (2.7)
+- [x] Cannot edit, demote or delete a super user — passing (2.7)
+- [x] Cannot create or modify roles — passing (2.7)
+- [x] Cannot widen their own territory — passing (2.7)
+- [x] Cannot see users with no overlapping assignment — passing (2.7)
+- [x] All six failing, then all six passing — 81 red, then 84 green; full suite 161
 
 ## Phase 3 — Enforcement
 - [ ] Query scoping (or documented post-filter fallback with its limits stated)
@@ -538,3 +538,44 @@ Decision recorded for Phase 4: `addMember` deliberately does **not** require the
 visible — it is the act that creates the overlap. The admin UI should add by email/id, not from a
 list; this leaves a small existence oracle (success vs. error tells the admin an id exists),
 accepted and to be documented.
+
+### Phase 2.7 — All six failing, then all six passing (2026-09-11)
+
+Un-parked all six files: **81 failed, 4 passed** (the harness and the structural test), every
+failure on the unbound contract. Implemented; **84 passed**; full suite **161 passed, 0 todos**.
+
+**Implementation** — `Administration\DelegatedAdministration`, bound to the contract in the
+provider; `Storage\TerritoryStore` is the *only* writer of the two tables and invalidates the
+resolver on every write; `Administration\ManagementPermissions` is the never-grantable list;
+`TerritoryMap` gained two pure views, `assignmentsFor(subjects)` (as written, no inheritance) and
+`subjectsIn(territoryIds)`, unit-tested. Every operation has one shape: resolve → check every
+applicable invariant → write. Super users skip the invariants but not the sanity checks (a super
+user gets `InvalidArgumentException` for a missing territory/user/role, never a silent no-op).
+The class header maps each invariant to the private method that enforces it:
+1 + 4 `requireRolesGrantable` (exists, held, no management permission — on the role *as it is
+now*); 2 `requireAdministers` (also refuses a missing territory); 3 `requireNotSuper`;
+4 + credentials `requireProfileAttributes` (`super` → promotion refused; `roles`/`groups` →
+role management; `id`, `password`, `password_hash`, `remember_token`, `preferences`, `two_factor*`,
+`passkey*` → new `RESERVED_ATTRIBUTE` — a territory admin who can set a colleague's password owns
+the account); 5 `requireTerritoryChangesAllowed` (only `name` and `slug`; every other key,
+recognised or not, is refused); 6 `requireWhollyWithin` (any overlapping assignment → visible;
+any non-overlapping one → `USER_SHARED`) and `visibleUsers` (subjects assigned to administered
+territories, groups expanded through `UserGroup::queryUsers()`). `deleteUser` also deletes every
+assignment naming the user.
+
+**Two test scenarios were wrong, not the code:** (a) invariant 4's "even one the admin holds" is
+impossible for the `super` permission — `User::isSuper()` *is* `hasPermission('super')`, so an
+actor holding such a role is super and correctly bypasses everything; replaced with the honest
+statement (nobody short of a super user can hand it out, and the target never becomes super).
+(b) invariant 5's super-user control widened `/cardiology` to `/` while the fixture's root
+territory already owned `/`; the `(site, scope_type, scope_ref)` unique index refused it — rightly
+— so the control now widens to the whole collection instead.
+
+**Added beyond the six** (implementation-driven): reserved-attribute refusal (7 attributes,
+data-driven); malformed subjects and missing users/groups rejected with `InvalidArgumentException`
+before any invariant is consulted, writing nothing; assignment cleanup on delete.
+
+**Deliberately not here** (Phase 4): audit rows for successful and refused operations (all writes
+already go through one class, so the wrap is mechanical); an `Actor` factory from the signed-in
+Statamic user for the CP; the users-listing surface flagged under invariant 4; the `addMember`
+existence oracle recorded under invariant 6.
