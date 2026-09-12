@@ -43,7 +43,7 @@
 - [x] Super users explicitly exempt, and documented as such
 
 ## Phase 4 — Territory management
-- [x] CP screens: territories, assignments, membership — site-administration screen; not yet clicked through in a browser
+- [x] CP screens: territories, assignments, membership — site-administration screen; clicked through in the host 2026-09-12
 - [ ] Territory admin self-service, constrained by the Phase 2 invariants
 - [ ] Audit log, scoped per territory
 - [ ] `delegated:doctor` — orphaned territories, entries with no owner
@@ -940,11 +940,12 @@ site; collection and term scopes; update, self/descendant parent refused, missin
 cascades assignments, children become roots, resolver forgets; assignments add/upsert/remove with
 `granted_by`; bad subjects/levels 422; the committed build's manifest names a file that exists.
 
-**⚠️ Not done: the page has not been exercised in a browser.** The Claude-in-Chrome extension was
-not connected in this session. The Vue SFC compiles and every endpoint it calls is tested, but a
-prop-name or slot mistake against the UI kit would only show at runtime. Open
-`http://statamic-dev.test/cp/delegated/territories` as the host's super user (assets are
-published there) and try create → members → edit → delete before treating 4.1 as finished.
+**Clicked through in the host (2026-09-12, after the cache fix below):** nav item present; empty
+state; create modal with the slug auto-derived; create → row appears with site, scope badge and
+`/cardiology`; members modal → add the one user as member → "1 assigned" with level badge →
+remove → "0 assigned"; row menu → edit pre-filled → rename → saved; delete confirmation → empty
+state again. No console errors. Cosmetic only: the members table's Remove button shows its text
+despite `icon-only`; the Dropdown's default trigger is the "…" the kit provides.
 
 ### 2026-09-12 — Host CP down: "Statamic Pro is required to use multiple sites"
 
