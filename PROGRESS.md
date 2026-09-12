@@ -22,7 +22,7 @@
 ## Phase 2 — Escalation invariants (tests before features)
 - [x] Cannot grant a role they do not hold — written failing, parked as `todo` until 2.7
 - [x] Cannot add a user to a territory they do not administer — written failing, parked as `todo` until 2.7
-- [ ] Cannot edit, demote or delete a super user
+- [x] Cannot edit, demote or delete a super user — written failing, parked as `todo` until 2.7
 - [ ] Cannot create or modify roles
 - [ ] Cannot widen their own territory
 - [ ] Cannot see users with no overlapping assignment
@@ -468,3 +468,17 @@ another territory (removal is the same boundary — and would be a denial of ser
 department); a territory id that does not exist; and — order of checks — a request whose roles
 invariant 1 *would* allow but whose territory is not theirs grants no role either. Super exempt.
 Un-marked run: **14 failed**, all on `TerritoryAdministration is not instantiable`.
+
+**Invariant 3 — cannot edit, demote or delete a super user** (`CannotTouchSuperUserTest`, 10
+tests). Decision: the rule is stated as *"a super user is not a subject a territory admin can act
+on, in any way, through Delegated"* rather than three cases — no exceptions to remember — and the
+`super` flag is off-limits in **both** directions (no demoting, no promoting: a territory admin who
+could set it on a colleague could set it on a second account of their own). Fixture puts the super
+user *inside* cardiology so the refusal is this invariant's and not invariant 6's. Refused, nothing
+changed, `SUPER_USER`: `updateUser` (name; email — which is the account; `super => false`);
+`setRoles` even to roles the admin holds, and to `[]`; `deleteUser`; `removeMember`/`addMember` of
+a super user (neither escalates, the rule just has no exceptions); every one of these against a
+super user the admin *cannot see* (whichever check runs first, the answer is no); and
+`updateUser(..., ['super' => true])` on an ordinary member, alone or mixed with a harmless field
+(nothing applied). Control: the admin *can* rename an ordinary member, so the refusals are about
+the target. Super acting on super: exempt. Un-marked run: **10 failed** (unbound contract).
