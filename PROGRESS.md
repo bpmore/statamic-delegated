@@ -955,3 +955,23 @@ refuses. Fixed by setting `STATAMIC_PRO_ENABLED=true` in the host `.env` (Pro is
 development, and Delegated requires it anyway); `GET /cp` answers again. Recorded in CLAUDE.md.
 The Phase 4.1 "same slug on another site" test uses `Site::setSites()` inside the Testbench
 sandbox only — checked that it cannot reach the host's file.
+
+### 2026-09-12 — First real click-through: the resolver's cache broke on Laravel 13
+
+Creating a territory in the host failed with `TerritoryResolver::cached(): Return value must be
+of type TerritoryMap, __PHP_Incomplete_Class returned`. **Root cause:** Laravel 13's
+`config/cache.php` ships `serializable_classes => false` (gadget-chain hardening) — every store
+unserializes with `allowed_classes => false`, so a cached *object* comes back as an incomplete
+class. The resolver cached the `TerritoryMap` object. The suite never saw it: Testbench's
+skeleton does not set the key, and its `array` store does not serialise at all. **This would have
+broken every real Laravel 13 site on first use** — the kind of bug the host click-through exists
+to catch. Fix: the cache now holds plain arrays (`Territory::toArray/fromArray`,
+`Assignment::toArray/fromArray`) and the map is rebuilt on read; a wrong-shaped value under the
+key is replaced rather than trusted. Regression test runs with the host's setting **on a `file`
+store** (the `array` store would have passed vacuously) and was shown to fail against the old
+code. Host cache cleared; the resolver reads back from the host's file cache. 364 tests.
+
+Also today: the host user's `password_hash` had been hand-edited to a plain 9-character value
+(YAML would not parse — `@` cannot start a plain scalar). While re-hashing it in place the line was
+lost and the backup deleted in the same command; the account had to be given a new password.
+Lesson recorded: keep a backup until the result is verified, never in the same command.

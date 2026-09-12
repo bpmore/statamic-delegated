@@ -6,6 +6,7 @@ use Bpmore\StatamicDelegated\Resolution\TerritoryResolver;
 use Bpmore\StatamicDelegated\Territories\ContentFacts;
 use Bpmore\StatamicDelegated\Territories\Level;
 use Bpmore\StatamicDelegated\Territories\ScopeType;
+use Bpmore\StatamicDelegated\Territories\TerritoryMap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -203,4 +204,44 @@ it('resolves with no territories at all as "nobody owns anything"', function () 
     expect(resolver()->map()->isEmpty())->toBeTrue()
         ->and(resolver()->owner(new ContentFacts('default', 'pages', '/anything')))->toBeNull()
         ->and(resolver()->membershipFor(['user:u1'])->isEmpty())->toBeTrue();
+});
+
+it('survives a cache that refuses to unserialize objects, as Laravel 13 does by default', function () {
+    // The host's config/cache.php has `serializable_classes => false`, which
+    // hands back __PHP_Incomplete_Class for any cached object. Testbench's
+    // skeleton does not set it, and its array store never serialises at
+    // all, so the suite never saw the resolver break on a real site until
+    // it did. Run with the real setting on a store that really serialises.
+    config([
+        'cache.serializable_classes' => false,
+        'cache.default' => 'file',
+        'cache.stores.file' => ['driver' => 'file', 'path' => $this->fakeStacheDirectory.'/cache'],
+    ]);
+    Cache::forgetDriver('file');
+    $this->app->forgetInstance(TerritoryResolver::class);
+    Blink::store('delegated')->flush();
+
+    $cardiology = seedTerritory();
+    seedAssignment($cardiology, 'user', 'u1', 'admin');
+
+    // First read builds and caches; a second request reads from the cache.
+    resolver()->map();
+    Blink::store('delegated')->flush();
+
+    $map = resolver()->map();
+
+    expect($map)->toBeInstanceOf(TerritoryMap::class)
+        ->and($map->find($cardiology)?->scopeRef)->toBe('/cardiology')
+        ->and($map->membershipFor(['user:u1'])->isAdminOf($cardiology))->toBeTrue()
+        ->and(resolver()->owner(new ContentFacts('default', 'pages', '/cardiology/x'))?->id)->toBe($cardiology);
+});
+
+it('rebuilds rather than trusts a cached value of the wrong shape', function () {
+    $cardiology = seedTerritory();
+    resolver()->map();
+    Blink::store('delegated')->flush();
+
+    Cache::put('delegated.territories.map.v'.resolver()->version(), 'garbage', 3600);
+
+    expect(resolver()->owner(new ContentFacts('default', 'pages', '/cardiology'))?->id)->toBe($cardiology);
 });

@@ -25,6 +25,39 @@ final class Territory
     }
 
     /**
+     * A plain-array form, for a cache that will not unserialize objects
+     * (Laravel's `cache.serializable_classes` is false by default since 13).
+     *
+     * @return array{id:int,name:string,slug:string,site:string,scope_type:string,scope_ref:string,parent_id:int|null}
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'site' => $this->site,
+            'scope_type' => $this->scopeType->value,
+            'scope_ref' => $this->scopeRef,
+            'parent_id' => $this->parentId,
+        ];
+    }
+
+    /** @param  array{id:int|string,name:string,slug:string,site:string,scope_type:string,scope_ref:string,parent_id:int|string|null}  $data */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            id: (int) $data['id'],
+            name: (string) $data['name'],
+            slug: (string) $data['slug'],
+            site: (string) $data['site'],
+            scopeType: ScopeType::from((string) $data['scope_type']),
+            scopeRef: (string) $data['scope_ref'],
+            parentId: $data['parent_id'] === null ? null : (int) $data['parent_id'],
+        );
+    }
+
+    /**
      * Whether this territory's scope covers the content. Site-bound: a
      * territory never reaches across sites, whatever its scope.
      */

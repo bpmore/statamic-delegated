@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bpmore\StatamicDelegated\Resolution;
 
+use Bpmore\StatamicDelegated\Territories\Assignment;
 use Bpmore\StatamicDelegated\Territories\ContentFacts;
 use Bpmore\StatamicDelegated\Territories\Membership;
 use Bpmore\StatamicDelegated\Territories\Territory;
@@ -94,13 +95,36 @@ final class TerritoryResolver
         return (int) $this->cache->get(self::VERSION_KEY, 0);
     }
 
+    /**
+     * The cache holds plain arrays, never the map itself: Laravel 13's cache
+     * refuses to unserialize objects (`cache.serializable_classes` is false
+     * by default, against gadget chains), and hands back an incomplete class
+     * instead — which is what a real site would have seen. Rebuilding the
+     * map from arrays is a few hundred constructor calls at most.
+     */
     private function cached(): TerritoryMap
     {
         $key = 'delegated.territories.map.v'.$this->version();
-        $build = fn (): TerritoryMap => new TerritoryMap($this->source->territories(), $this->source->assignments());
+        $build = fn (): array => [
+            'territories' => array_map(fn (Territory $t): array => $t->toArray(), $this->source->territories()),
+            'assignments' => array_map(fn (Assignment $a): array => $a->toArray(), $this->source->assignments()),
+        ];
 
-        return $this->ttl === null
+        $data = $this->ttl === null
             ? $this->cache->rememberForever($key, $build)
             : $this->cache->remember($key, $this->ttl, $build);
+
+        if (! is_array($data) || ! isset($data['territories'], $data['assignments'])) {
+            // Something else, or an older shape, under our key: rebuild
+            // rather than trust it, and replace it.
+            $this->cache->forget($key);
+            $data = $build();
+            $this->ttl === null ? $this->cache->forever($key, $data) : $this->cache->put($key, $data, $this->ttl);
+        }
+
+        return new TerritoryMap(
+            array_map(Territory::fromArray(...), $data['territories']),
+            array_map(Assignment::fromArray(...), $data['assignments']),
+        );
     }
 }

@@ -23,4 +23,16 @@ final class Assignment
     {
         return $type.':'.$id;
     }
+
+    /** @return array{territory_id:int,subject:string,level:string} */
+    public function toArray(): array
+    {
+        return ['territory_id' => $this->territoryId, 'subject' => $this->subject, 'level' => $this->level->value];
+    }
+
+    /** @param  array{territory_id:int|string,subject:string,level:string}  $data */
+    public static function fromArray(array $data): self
+    {
+        return new self((int) $data['territory_id'], (string) $data['subject'], Level::from((string) $data['level']));
+    }
 }
