@@ -38,7 +38,7 @@
   - [x] 3.2.e Structure tree PATCH and flat reorder — moves confined to territory; `deletedEntries` checked
   - [x] 3.2.f Navigation tree GET and PATCH — linked entries outside territory hidden / not linkable
   - [x] 3.2.g Relationship picker index — scope the fieldtype's query
-  - [ ] 3.2.h Users listing — a territory admin holding `view users` sees only visible users
+  - [x] 3.2.h Users listing — a territory admin holding `view users` sees only visible users
   - [ ] 3.2.i Direct-URL oracles (`cp/edit/{id}`, `{entry}/{slug}` redirect) — 404 outside territory
 - [ ] Super users explicitly exempt, and documented as such
 
@@ -825,3 +825,39 @@ scoped set; search with and without an index; super unrestricted; the override r
 With this, **every listing surface from the Phase 0.1 inventory scopes the query before it runs**:
 the entry listing and its search (3.1), the command palette (post-filter, Statamic's own, 3.2.a),
 the structure tree (3.2.d), the nav tree (3.2.f), and the picker (3.2.g).
+
+### Phase 3.2.h — Users listing and Statamic's own user screens (2026-09-11)
+
+**Who is confined — a decision.** Anyone who belongs to a territory: their view of Statamic's
+users screens becomes invariant 6's (the users they administer, plus themselves; a plain member
+sees only themselves). **Not** confined: super users, and people in **no territory at all** —
+their user management is Statamic's business under Statamic's permissions. This is deliberately
+narrower than `Exempt::user()` (content): a site needs to be able to have a non-super user
+administrator, and has one by keeping them out of every territory. Recorded in
+`Enforcement\UserVisibility`.
+
+**Seam.** The users listing has no hook, but it applies request `filters` through Statamic's
+filter-scope extension and resolves them by handle regardless of `visibleTo`. So `Scopes\VisibleUsers`
+is a hidden filter (`visibleTo` false, no fields, no badge) whose `apply()` does `whereIn('id', …)`
+**from the signed-in user, ignoring the request's values** — a crafted `filters` parameter cannot
+widen it — and `Enforcement\ScopesUsersListing` (middleware on `users.index`) rewrites the
+base64-JSON `filters` parameter to include it, so it cannot be left off either. Pagination and
+totals stay honest; no controller code copied; works on the search path and the `group` path.
+Direct URLs and bulk actions: `Enforcement\GuardsUserAbilities` is a `Gate::before` for `User`
+subjects — a confined actor is refused everything on a user they cannot see, and everything but
+`view` on one they may not change (a super user, or a user shared with a territory they do not
+administer); themselves they always reach, and what they may do to themselves stays Statamic's
+decision. `Administration\Visibility` was extracted from `DelegatedAdministration` so the
+invariant-6 rule has one implementation for Delegated's operations and Statamic's screens alike;
+`Administration\Actors::from($user)` is the Actor factory deferred from Phase 2.
+
+**Tested** (`UsersScopingTest`, 9 scenarios; users are file-driven under both test cases so it
+runs once): the admin's listing is exactly their users plus themselves with the right total; a
+member sees only themselves; a no-territory user administrator and a super user see everyone; a
+search is scoped; a crafted or omitted `filters` parameter changes nothing; pagination of the
+confined set; the edit screen refused by direct URL for invisible, site-wide, unassigned, super and
+shared users, allowed for wholly-owned users and self; update refused and unchanged for invisible
+and shared, allowed for wholly-owned; delete neither offered nor run on an invisible user, run on
+a wholly-owned one; the unconfined administrator still edits anyone Statamic lets them.
+Test-side: Statamic requires an *elevated session* to edit users — its own 403, disabled in the
+file so the refusals proven are Delegated's.

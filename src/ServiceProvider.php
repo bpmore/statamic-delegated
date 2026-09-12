@@ -6,12 +6,15 @@ namespace Bpmore\StatamicDelegated;
 
 use Bpmore\StatamicDelegated\Administration\DelegatedAdministration;
 use Bpmore\StatamicDelegated\Administration\TerritoryAdministration;
+use Bpmore\StatamicDelegated\Administration\Visibility;
 use Bpmore\StatamicDelegated\Enforcement\GuardsEntryAbilities;
 use Bpmore\StatamicDelegated\Enforcement\GuardsEntryCreation;
 use Bpmore\StatamicDelegated\Enforcement\GuardsNavigationTree;
 use Bpmore\StatamicDelegated\Enforcement\GuardsStructureTreeUpdate;
+use Bpmore\StatamicDelegated\Enforcement\GuardsUserAbilities;
 use Bpmore\StatamicDelegated\Enforcement\PrunesStructureTree;
 use Bpmore\StatamicDelegated\Enforcement\ScopesEntryListings;
+use Bpmore\StatamicDelegated\Enforcement\ScopesUsersListing;
 use Bpmore\StatamicDelegated\Resolution\DatabaseTerritorySource;
 use Bpmore\StatamicDelegated\Resolution\TerritoryResolver;
 use Bpmore\StatamicDelegated\Resolution\TerritorySource;
@@ -36,6 +39,11 @@ class ServiceProvider extends AddonServiceProvider
         Fieldtypes\Entries::class,
     ];
 
+    // The hidden listing filter that confines the users listing. See the class.
+    protected $scopes = [
+        Scopes\VisibleUsers::class,
+    ];
+
     // Enforcement points that are middleware. Each acts only on the routes
     // it names and does nothing for a user Exempt::user() names.
     protected $middlewareGroups = [
@@ -44,6 +52,7 @@ class ServiceProvider extends AddonServiceProvider
             PrunesStructureTree::class,
             GuardsStructureTreeUpdate::class,
             GuardsNavigationTree::class,
+            ScopesUsersListing::class,
         ],
     ];
 
@@ -80,6 +89,7 @@ class ServiceProvider extends AddonServiceProvider
         $this->app->singleton(TerritoryAdministration::class, fn (Application $app): TerritoryAdministration => new DelegatedAdministration(
             $app->make(TerritoryResolver::class),
             $app->make(TerritoryStore::class),
+            $app->make(Visibility::class),
         ));
     }
 
@@ -105,5 +115,6 @@ class ServiceProvider extends AddonServiceProvider
         // a user Exempt::user() names.
         $this->app->make(ScopesEntryListings::class)->register();
         $this->app->make(GuardsEntryAbilities::class)->register();
+        $this->app->make(GuardsUserAbilities::class)->register();
     }
 }

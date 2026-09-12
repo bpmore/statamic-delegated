@@ -6,7 +6,6 @@ namespace Bpmore\StatamicDelegated\Administration;
 
 use Bpmore\StatamicDelegated\Resolution\TerritoryResolver;
 use Bpmore\StatamicDelegated\Storage\TerritoryStore;
-use Bpmore\StatamicDelegated\Territories\Assignment;
 use Bpmore\StatamicDelegated\Territories\Level;
 use Bpmore\StatamicDelegated\Territories\Membership;
 use InvalidArgumentException;
@@ -42,6 +41,7 @@ final class DelegatedAdministration implements TerritoryAdministration
     public function __construct(
         private readonly TerritoryResolver $resolver,
         private readonly TerritoryStore $store,
+        private readonly Visibility $visibility,
     ) {}
 
     public function addMember(Actor $actor, int $territoryId, string $subject, Level $level, array $roles = []): void
@@ -164,33 +164,7 @@ final class DelegatedAdministration implements TerritoryAdministration
 
     public function visibleUsers(Actor $actor): array
     {
-        if ($actor->isSuper) {
-            return User::all()->map->id()->values()->all();
-        }
-
-        $administered = $this->membership($actor)->administeredIds();
-
-        if ($administered === []) {
-            return [];
-        }
-
-        $ids = [];
-
-        foreach ($this->resolver->map()->subjectsIn($administered) as $subject) {
-            [$type, $id] = $this->parseSubject($subject);
-
-            if ($type === 'user') {
-                if (User::find($id) !== null) {
-                    $ids[$id] = true;
-                }
-            } elseif (($group = UserGroup::find($id)) !== null) {
-                foreach ($group->queryUsers()->get() as $user) {
-                    $ids[$user->id()] = true;
-                }
-            }
-        }
-
-        return array_keys($ids);
+        return $this->visibility->visibleIds($actor);
     }
 
     // ------------------------------------------------------------ invariants
@@ -287,15 +261,7 @@ final class DelegatedAdministration implements TerritoryAdministration
      */
     private function requireWhollyWithin(Actor $actor, UserContract $user): void
     {
-        $administered = array_flip($this->membership($actor)->administeredIds());
-        $assignments = $this->resolver->map()->assignmentsFor($this->subjectsOf($user));
-
-        $inside = false;
-        $outside = false;
-
-        foreach ($assignments as $assignment) {
-            isset($administered[$assignment->territoryId]) ? $inside = true : $outside = true;
-        }
+        ['inside' => $inside, 'outside' => $outside] = $this->visibility->placement($actor, $user);
 
         if (! $inside) {
             throw EscalationDenied::userNotVisible($user->id());
@@ -311,18 +277,6 @@ final class DelegatedAdministration implements TerritoryAdministration
     private function membership(Actor $actor): Membership
     {
         return $this->resolver->membershipFor($actor->subjects);
-    }
-
-    /** @return list<string> */
-    private function subjectsOf(UserContract $user): array
-    {
-        $subjects = [Assignment::subject('user', $user->id())];
-
-        foreach ($user->groups() as $group) {
-            $subjects[] = Assignment::subject('group', $group->handle());
-        }
-
-        return $subjects;
     }
 
     /** @return array{string, string} */
