@@ -32,7 +32,7 @@
 - [x] Query scoping (or documented post-filter fallback with its limits stated) — scoped before execution on both drivers, no fallback needed
 - [ ] One task per surface from the Phase 0 inventory, each with a denial test:
   - [x] 3.2.a Policy layer — every entry ability territory-aware via the Gate; closes edit screen, direct URL, update, publish/unpublish, live preview, revisions, nav page edit, picker `data`, command palette, built-in delete/publish/unpublish actions
-  - [ ] 3.2.b `duplicate_entry` — require `view` on the source; not offered on out-of-territory items
+  - [x] 3.2.b `duplicate_entry` — require `view` on the source; not offered on out-of-territory items
   - [ ] 3.2.c Create under a parent — `_parent` (store, preview.create, title-format.create) must be inside territory
   - [ ] 3.2.d Structure tree GET — authorize the collection, prune branches outside territory
   - [ ] 3.2.e Structure tree PATCH and flat reorder — moves confined to territory; `deletedEntries` checked
@@ -681,3 +681,25 @@ Eloquent column's NOT NULL — the payloads now send it.
 
 Still open on this surface, by design: `duplicate_entry` is still offered on outside items
 (3.2.b) — the bulk test asserts only `delete`/`unpublish`.
+
+### Phase 3.2.b — `duplicate_entry` (2026-09-11)
+
+`Actions\DuplicateEntry extends Statamic\Actions\DuplicateEntry`, same auto-derived handle,
+`authorize()` = `can('view', $item) && parent::authorize()`. Registered through the provider's
+`$actions`; core actions register in `ExtensionServiceProvider::register()` and addon actions at
+boot, and `RegistersItself::register()` overwrites an existing handle, so the subclass replaces
+the core action everywhere (`Action::get`, `Action::for`, bulk lists) — verified in the host.
+Tested on both drivers: not offered on an outside entry (offered on an inside one); refused with
+403 in both `list` and `form` context, creating nothing and returning no `data`; a mixed selection
+refused whole; an inside duplicate succeeds and **its copy is inside the territory** (`/cardiology/
+trials-1`, viewable); super exempt. Fixture: the shared `editor` role gained `create pages entries`,
+which the core `authorize()` needs — the control was failing for the fixture's reason, not the
+code's.
+
+Noted for the doctor command (Phase 4): duplicating a *top-level* branch entry makes a copy the
+core action never appends to the tree — an orphan that, below a root territory, its own creator
+cannot open. Not a leak; a wart worth listing.
+
+Still open from Phase 0.1's bulk-action finding: a **third-party** action with a permissive
+`authorize()` remains a read path via `context.view=form` (`getItemData` runs after only the
+action's own check). Not closable by the Gate; to be stated in the README's limitations (Phase 5).

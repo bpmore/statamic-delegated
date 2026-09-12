@@ -21,6 +21,11 @@ class ServiceProvider extends AddonServiceProvider
     // commands — never the repository name.
     protected $viewNamespace = 'delegated';
 
+    // Replaces Statamic's duplicate action under its own handle. See the class.
+    protected $actions = [
+        Actions\DuplicateEntry::class,
+    ];
+
     public function register(): void
     {
         parent::register();
