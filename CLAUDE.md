@@ -12,6 +12,11 @@ The host site's `composer.json` has a path repository pointing here, and Compose
 it — edits in this repo are live in the site immediately. There is **no reinstall or rebuild
 step** after changing addon code.
 
+The host site is **multisite** (`default` + `fr`, converted by another addon's session on
+2026-09-11; entries live under `content/collections/<collection>/default/`) and has
+`STATAMIC_PRO_ENABLED=true` in its `.env` — Statamic refuses to serve the control panel for
+multiple sites, or for more than one user, without Pro, and Delegated needs Pro regardless.
+
 The host site also has `statamic/eloquent-driver` as a **`require-dev`** dependency (added for
 the Phase 0.3 spike). Its config is deliberately not published, so the host runs on the file
 driver; `recon/QueryScopingSpikeTest.php` flips the `entries` repository to Eloquent in-process

@@ -945,3 +945,13 @@ not connected in this session. The Vue SFC compiles and every endpoint it calls 
 prop-name or slot mistake against the UI kit would only show at runtime. Open
 `http://statamic-dev.test/cp/delegated/territories` as the host's super user (assets are
 published there) and try create → members → edit → delete before treating 4.1 as finished.
+
+### 2026-09-12 — Host CP down: "Statamic Pro is required to use multiple sites"
+
+Not Delegated's doing: the host was converted to multisite (`resources/sites.yaml` gained `fr`,
+`system.multisite => true`) by the sibling addon's session on the evening of 2026-09-11, and the
+host's `.env` had `STATAMIC_PRO_ENABLED=false`, which Statamic's `CheckMultisite` middleware
+refuses. Fixed by setting `STATAMIC_PRO_ENABLED=true` in the host `.env` (Pro is free for local
+development, and Delegated requires it anyway); `GET /cp` answers again. Recorded in CLAUDE.md.
+The Phase 4.1 "same slug on another site" test uses `Site::setSites()` inside the Testbench
+sandbox only — checked that it cannot reach the host's file.
