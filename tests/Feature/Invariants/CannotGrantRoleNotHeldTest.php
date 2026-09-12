@@ -127,3 +127,23 @@ it('does not apply to a super user', function () {
 
     expect(Site::rolesOf('newbie'))->toBe(['site-admin']);
 });
+
+it('leaves a role the admin does not hold on the user when setting the roles they do hold', function () {
+    // Keeping is not granting; dropping would be a demotion the admin has no
+    // standing for. The admin decides only among their own roles.
+    Site::role('oncology-editor', ['access cp', 'view pages entries']);
+    Site::user('member', roles: ['cardiology-editor', 'oncology-editor']);
+    Site::assign($this->cardiology, 'user:member');
+
+    // Take cardiology-editor away: oncology-editor, which the head does not hold, stays.
+    administration()->setRoles(Site::actor('head'), 'member', []);
+    expect(Site::rolesOf('member'))->toBe(['oncology-editor']);
+
+    // Give it back: still only the head's own roles change.
+    administration()->setRoles(Site::actor('head'), 'member', ['cardiology-editor']);
+    expect(Site::rolesOf('member'))->toBe(['cardiology-editor', 'oncology-editor']);
+
+    // And asking for the role they do not hold is still refused outright.
+    expect(fn () => administration()->setRoles(Site::actor('head'), 'member', ['oncology-editor']))
+        ->toThrow(EscalationDenied::class);
+});

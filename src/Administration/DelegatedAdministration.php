@@ -96,16 +96,28 @@ final class DelegatedAdministration implements TerritoryAdministration
     public function setRoles(Actor $actor, string $userId, array $roles): void
     {
         $user = $this->requireUser($userId);
+        $roles = array_values(array_unique($roles));
 
         if (! $actor->isSuper) {
             $this->requireNotSuper($user);
             $this->requireWhollyWithin($actor, $user);
             $this->requireRolesGrantable($actor, $roles);
+
+            // The actor decides only among the roles they hold. A role the
+            // user already has that the actor does not hold is neither
+            // granted nor taken away: keeping it is not granting it, and
+            // dropping it would be a demotion the actor has no standing for.
+            $kept = array_values(array_filter(
+                $user->explicitRoles()->map->handle()->values()->all(),
+                fn (string $handle): bool => ! $actor->holdsRole($handle),
+            ));
+
+            $roles = array_values(array_unique(array_merge($kept, $roles)));
         } else {
             $this->requireRolesExist($roles);
         }
 
-        $user->explicitRoles(array_values(array_unique($roles)))->save();
+        $user->explicitRoles($roles)->save();
     }
 
     public function updateUser(Actor $actor, string $userId, array $attributes): void

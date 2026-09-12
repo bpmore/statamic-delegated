@@ -17,12 +17,14 @@ use Bpmore\StatamicDelegated\Enforcement\PrunesStructureTree;
 use Bpmore\StatamicDelegated\Enforcement\ScopesEntryListings;
 use Bpmore\StatamicDelegated\Enforcement\ScopesUsersListing;
 use Bpmore\StatamicDelegated\Resolution\DatabaseTerritorySource;
+use Bpmore\StatamicDelegated\Resolution\Subjects;
 use Bpmore\StatamicDelegated\Resolution\TerritoryResolver;
 use Bpmore\StatamicDelegated\Resolution\TerritorySource;
 use Bpmore\StatamicDelegated\Storage\TerritoryStore;
 use Illuminate\Contracts\Foundation\Application;
 use Statamic\Facades\CP\Nav;
 use Statamic\Facades\Permission;
+use Statamic\Facades\User;
 use Statamic\Providers\AddonServiceProvider;
 
 class ServiceProvider extends AddonServiceProvider
@@ -139,6 +141,18 @@ class ServiceProvider extends AddonServiceProvider
                 ->route('delegated.territories.index')
                 ->icon('users')
                 ->can('manage territories');
+
+            // Self-service, for anyone who administers a territory. Nav items
+            // gate on permissions; this one gates on membership, so the check
+            // is made here.
+            $user = User::current();
+
+            if ($user !== null && ! $user->isSuper()
+                && $this->app->make(TerritoryResolver::class)->membershipFor(Subjects::of($user))->administeredIds() !== []) {
+                $nav->users('My territories')
+                    ->route('delegated.my-territories.index')
+                    ->icon('users');
+            }
         });
 
         // Enforcement points, one class per control-panel surface from the

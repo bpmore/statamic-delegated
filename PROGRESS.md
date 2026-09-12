@@ -44,7 +44,7 @@
 
 ## Phase 4 — Territory management
 - [x] CP screens: territories, assignments, membership — site-administration screen; clicked through in the host 2026-09-12
-- [ ] Territory admin self-service, constrained by the Phase 2 invariants
+- [x] Territory admin self-service, constrained by the Phase 2 invariants — backend and page built and tested; browser pass pending (session expired)
 - [ ] Audit log, scoped per territory
 - [ ] `delegated:doctor` — orphaned territories, entries with no owner
 
@@ -976,3 +976,42 @@ Also today: the host user's `password_hash` had been hand-edited to a plain 9-ch
 (YAML would not parse — `@` cannot start a plain scalar). While re-hashing it in place the line was
 lost and the backup deleted in the same command; the account had to be given a new password.
 Lesson recorded: keep a backup until the result is verified, never in the same command.
+
+### Phase 4.2 — Territory admin self-service (2026-09-12)
+
+**Contract change first.** `setRoles` used to *replace* a user's roles, so an admin editing a
+wholly-owned member would silently strip any role the admin does not hold. Keeping is not
+granting, and dropping would be a demotion the admin has no standing for, so `setRoles` now
+changes only the roles the actor holds and leaves the rest as they are (contract doc updated; the
+invariant-1 file gained the test; asking *for* a role not held is still refused outright).
+
+**Built.** `MyTerritoriesController` under `cp/delegated/my-territories`: no permission on the
+routes — the controller admits anyone who administers at least one territory (and super users,
+who see every territory), and **every write goes through `TerritoryAdministration`**, so the six
+invariants decide; an `EscalationDenied` becomes a 403 whose JSON names the invariant, an
+`InvalidArgumentException` a 422. Operations: rename (name only — the route accepts nothing
+else, and the invariant would refuse scope anyway); add a member **by email address** (the
+invariant-6 decision: the admin is not handed a list of everyone on the site) or a group by
+handle, at a level, with roles; remove a member; set a wholly-owned member's roles. The JSON shows
+each member with the roles the admin may change and the ones shown **locked** (held by the user,
+not by the admin), marks shared and super users read-only, and marks the admin themselves.
+`grantableRoles` is the admin's own roles minus any carrying a management permission (the server
+refuses those regardless). Nav: "My territories" under Users, shown only to someone who
+administers a territory — nav items gate on permissions, so the membership check is made in the
+`Nav::extend` closure. Page `delegated/MyTerritories`: one panel per territory, members table
+with level and role badges (locked roles with a lock icon), rename / add / roles modals; a 403's
+message is shown as a toast, never as a success.
+
+**Tested** (`MyTerritoriesScreenTest`, 10): gate (member and no-territory user 403, admin and
+super 200); Inertia props with only the admin's territories and only grantable roles (a held
+`edit roles` role is never offered); members with editable/locked/shared/self flags and no sign of
+oncology's admin; add by email with a held role; refusals naming invariants 1, 4, 2 and 3 with
+nothing written; unknown email/group → 422; add a group as admin; remove inside allowed, outside
+refused; roles: held roles replaced, unheld kept, shared member refused with `USER_SHARED`;
+rename allowed, scope untouched, other territory refused; super sees all. 375 tests.
+
+**Browser pass not completed:** the CP session had expired in the new window and there is no
+password to hand. A territory (`Cardiology`, `/cardiology`, id 2) with the `Test` user as admin is
+seeded in the host for the check: open `http://statamic-dev.test/cp/delegated/my-territories`
+as Test and try rename → add member by email (`(address removed)`) → roles → remove.
+Delete the territory from the Territories screen afterwards.

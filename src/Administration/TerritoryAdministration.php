@@ -39,7 +39,9 @@ interface TerritoryAdministration
     public function removeMember(Actor $actor, int $territoryId, string $subject): void;
 
     /**
-     * Replace a visible user's roles with the given handles.
+     * Set a visible user's roles, among the roles the actor holds: those the
+     * actor holds are replaced by the given handles; any the user already
+     * has that the actor does not hold stay as they are.
      *
      * @param  list<string>  $roles
      *

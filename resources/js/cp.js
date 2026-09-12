@@ -1,5 +1,6 @@
 import { inertia } from '@statamic/cms/api';
 
+import MyTerritories from './pages/delegated/MyTerritories.vue';
 import Territories from './pages/delegated/Territories.vue';
 
 /**
@@ -10,3 +11,4 @@ import Territories from './pages/delegated/Territories.vue';
  * that name gets a component. The control panel layout is applied for us.
  */
 inertia.register('delegated/Territories', Territories);
+inertia.register('delegated/MyTerritories', MyTerritories);
