@@ -23,7 +23,7 @@
 - [x] Cannot grant a role they do not hold — written failing, parked as `todo` until 2.7
 - [x] Cannot add a user to a territory they do not administer — written failing, parked as `todo` until 2.7
 - [x] Cannot edit, demote or delete a super user — written failing, parked as `todo` until 2.7
-- [ ] Cannot create or modify roles
+- [x] Cannot create or modify roles — structural half passing now; behavioural half written failing, parked as `todo` until 2.7
 - [ ] Cannot widen their own territory
 - [ ] Cannot see users with no overlapping assignment
 - [ ] All six failing, then all six passing
@@ -482,3 +482,23 @@ super user the admin *cannot see* (whichever check runs first, the answer is no)
 `updateUser(..., ['super' => true])` on an ordinary member, alone or mixed with a harmless field
 (nothing applied). Control: the admin *can* rename an ordinary member, so the refusals are about
 the target. Super acting on super: exempt. Un-marked run: **10 failed** (unbound contract).
+
+**Invariant 4 — cannot create or modify roles** (`CannotCreateOrModifyRolesTest`, 20 tests).
+Two halves. (a) *Structural, passing now:* the contract's method list is pinned by name
+(`addMember, deleteUser, removeMember, setRoles, updateTerritory, updateUser, visibleUsers`) and no
+method accepts a `Role` — adding a role operation is a deliberate act that must edit the test.
+(b) *Behavioural, parked:* no role that **carries** a management permission can be granted through
+Delegated **even by an admin who holds it** — otherwise invariant 1 is a relay: a super user who
+once gave the head `edit roles` has given it to everyone the head ever adds. The never-grantable
+set, data-driven over 11 permissions: `super`, `edit roles`, `edit user groups`, `edit users`,
+`create users`, `delete users`, `change passwords`, `assign roles`, `assign user groups`,
+`impersonate users`, and `configure collections` (the `EntryPolicy::before()` bypass from
+Phase 0.1). Refused with `ROLE_MANAGEMENT`, nothing written, via `addMember` and `setRoles`; the
+check is on the role's permissions *at grant time* (a role that was harmless when the admin got
+it and is edited to carry `edit roles` later is refused from then on); and `updateUser` refuses
+`roles`/`groups` keys so profile edits cannot smuggle a role change. Control: an ordinary held
+role still grants. Super exempt. Un-marked run: **19 failed, 1 passed** (the structural one).
+
+Flagged for Phase 3/4, not this invariant: `view users` is *not* in the set, but a territory admin
+holding it sees every user through **Statamic's own** users listing, which is invariant 6's
+concern on a surface Delegated does not yet touch. The users listing joins the enforcement list.
