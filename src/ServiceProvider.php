@@ -30,6 +30,12 @@ class ServiceProvider extends AddonServiceProvider
         Actions\DuplicateEntry::class,
     ];
 
+    // Replaces Statamic's entries fieldtype under its own handle, so the
+    // relationship picker's query is scoped. See the class.
+    protected $fieldtypes = [
+        Fieldtypes\Entries::class,
+    ];
+
     // Enforcement points that are middleware. Each acts only on the routes
     // it names and does nothing for a user Exempt::user() names.
     protected $middlewareGroups = [

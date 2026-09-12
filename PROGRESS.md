@@ -37,7 +37,7 @@
   - [x] 3.2.d Structure tree GET — authorize the collection, prune branches outside territory
   - [x] 3.2.e Structure tree PATCH and flat reorder — moves confined to territory; `deletedEntries` checked
   - [x] 3.2.f Navigation tree GET and PATCH — linked entries outside territory hidden / not linkable
-  - [ ] 3.2.g Relationship picker index — scope the fieldtype's query
+  - [x] 3.2.g Relationship picker index — scope the fieldtype's query
   - [ ] 3.2.h Users listing — a territory admin holding `view users` sees only visible users
   - [ ] 3.2.i Direct-URL oracles (`cp/edit/{id}`, `{entry}/{slug}` redirect) — 404 outside territory
 - [ ] Super users explicitly exempt, and documented as such
@@ -807,3 +807,21 @@ inside intact, published-outside redacted but URL kept, draft-outside redacted i
 URL branch untouched; super sees all; new link to a draft outside → 403, branch count unchanged;
 re-point to outside → 403; new link to own entry → 200; re-title and move an outside-linked
 branch → 200 with the target unchanged; super may link anything.
+
+### Phase 3.2.g — Relationship picker index (2026-09-11)
+
+`Fieldtypes\Entries extends Statamic\Fieldtypes\Entries`, same auto-derived handle `entries`,
+registered through the provider's `$fieldtypes`; core fieldtypes register in
+`ExtensionServiceProvider::register()` and addon ones at boot, so the subclass replaces the core
+binding everywhere the handle is resolved — every `entries` field, Bard link and Link picker
+(verified in the host). It overrides `getIndexQuery()` to apply the same `TerritoryScope` the
+entry listing uses to the picker's query before it runs; the parent's search path (plain LIKE, or
+a `Search\QueryBuilder` when the collection has an index) is covered because the scope handles
+all three builders. The picker's `data` endpoint was closed in 3.2.a. Tested on both drivers
+(7 × 2): a member sees only their branch with the right total; no territory → empty, total 0; a
+picker over every collection returns the union of a branch and a term territory; pagination of the
+scoped set; search with and without an index; super unrestricted; the override resolves.
+
+With this, **every listing surface from the Phase 0.1 inventory scopes the query before it runs**:
+the entry listing and its search (3.1), the command palette (post-filter, Statamic's own, 3.2.a),
+the structure tree (3.2.d), the nav tree (3.2.f), and the picker (3.2.g).
