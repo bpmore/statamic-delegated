@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bpmore\StatamicDelegated\Enforcement;
 
 use Bpmore\StatamicDelegated\Territories\ContentFacts;
+use Statamic\Contracts\Entries\Collection;
 use Statamic\Contracts\Entries\Entry;
 use Statamic\Support\Arr;
 use Statamic\Support\Str;
@@ -24,23 +25,36 @@ final class Facts
 {
     public static function of(Entry $entry): ContentFacts
     {
-        $terms = [];
-
-        foreach ($entry->collection()->taxonomies() as $taxonomy) {
-            $handle = $taxonomy->handle();
-
-            foreach (Arr::wrap($entry->value($handle)) as $value) {
-                if (is_string($value) && $value !== '') {
-                    $terms[] = $handle.'::'.Str::slug($value);
-                }
-            }
-        }
-
         return new ContentFacts(
             site: (string) $entry->locale(),
             collection: (string) $entry->collectionHandle(),
             uri: $entry->uri(),
-            terms: $terms,
+            terms: self::termsFrom($entry->collection(), fn (string $handle) => $entry->value($handle)),
         );
+    }
+
+    /**
+     * The term references a set of values carries, for the collection's
+     * taxonomies. Shared with Placement, which reads a request instead of an
+     * entry — the same rule either way.
+     *
+     * @param  callable(string): mixed  $value  the value stored under a taxonomy's handle
+     * @return list<string>
+     */
+    public static function termsFrom(Collection $collection, callable $value): array
+    {
+        $terms = [];
+
+        foreach ($collection->taxonomies() as $taxonomy) {
+            $handle = $taxonomy->handle();
+
+            foreach (Arr::wrap($value($handle)) as $term) {
+                if (is_string($term) && $term !== '') {
+                    $terms[] = $handle.'::'.Str::slug($term);
+                }
+            }
+        }
+
+        return $terms;
     }
 }

@@ -7,6 +7,7 @@ namespace Bpmore\StatamicDelegated;
 use Bpmore\StatamicDelegated\Administration\DelegatedAdministration;
 use Bpmore\StatamicDelegated\Administration\TerritoryAdministration;
 use Bpmore\StatamicDelegated\Enforcement\GuardsEntryAbilities;
+use Bpmore\StatamicDelegated\Enforcement\GuardsEntryCreation;
 use Bpmore\StatamicDelegated\Enforcement\ScopesEntryListings;
 use Bpmore\StatamicDelegated\Resolution\DatabaseTerritorySource;
 use Bpmore\StatamicDelegated\Resolution\TerritoryResolver;
@@ -24,6 +25,14 @@ class ServiceProvider extends AddonServiceProvider
     // Replaces Statamic's duplicate action under its own handle. See the class.
     protected $actions = [
         Actions\DuplicateEntry::class,
+    ];
+
+    // Enforcement points that are middleware. Each acts only on the routes
+    // it names and does nothing for a user Exempt::user() names.
+    protected $middlewareGroups = [
+        'statamic.cp.authenticated' => [
+            GuardsEntryCreation::class,
+        ],
     ];
 
     public function register(): void

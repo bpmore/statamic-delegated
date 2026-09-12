@@ -29,7 +29,7 @@ final class AbilityScoping
         Site::role('editor', [
             'access cp',
             'view pages entries', 'edit pages entries', 'create pages entries', 'publish pages entries', 'delete pages entries',
-            'view news entries', 'edit news entries',
+            'view news entries', 'edit news entries', 'create news entries',
             'view main nav',
         ]);
 

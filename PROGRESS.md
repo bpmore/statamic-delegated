@@ -33,7 +33,7 @@
 - [ ] One task per surface from the Phase 0 inventory, each with a denial test:
   - [x] 3.2.a Policy layer — every entry ability territory-aware via the Gate; closes edit screen, direct URL, update, publish/unpublish, live preview, revisions, nav page edit, picker `data`, command palette, built-in delete/publish/unpublish actions
   - [x] 3.2.b `duplicate_entry` — require `view` on the source; not offered on out-of-territory items
-  - [ ] 3.2.c Create under a parent — `_parent` (store, preview.create, title-format.create) must be inside territory
+  - [x] 3.2.c Create under a parent — `_parent` (store) and `parent` (create screen) must land inside territory; preview.create and title-format.create turned out to carry no parent
   - [ ] 3.2.d Structure tree GET — authorize the collection, prune branches outside territory
   - [ ] 3.2.e Structure tree PATCH and flat reorder — moves confined to territory; `deletedEntries` checked
   - [ ] 3.2.f Navigation tree GET and PATCH — linked entries outside territory hidden / not linkable
@@ -703,3 +703,25 @@ cannot open. Not a leak; a wart worth listing.
 Still open from Phase 0.1's bulk-action finding: a **third-party** action with a permissive
 `authorize()` remains a read path via `context.view=form` (`getItemData` runs after only the
 action's own check). Not closable by the Gate; to be stated in the README's limitations (Phase 5).
+
+### Phase 3.2.c — Create under a parent (2026-09-11)
+
+**Built.** `Enforcement\GuardsEntryCreation`, middleware pushed onto `statamic.cp.authenticated`
+via the provider's `$middlewareGroups`, acting only on `collections.entries.store` (`_parent`) and
+`collections.entries.create` (`parent`). `Enforcement\Placement` computes where the new entry
+*would land* as `ContentFacts`: the would-be URI exactly as `EntriesController::entryUri()`
+computes it for its own uniqueness check (`UrlBuilder` with `parent_uri`/`slug`/`depth`; root
+parent = no parent; a parent not in the tree is refused, never treated as "no parent"); for a
+non-structured collection the route alone; terms from the submitted values via the shared
+`Facts::termsFrom()`. `Territorial::allowsFacts()` answers. Consequence stated: **a department
+member cannot create at the root of the tree** — it belongs to no department; a root territory can.
+Inventory correction: `preview.create` and `title-format.create` never read a parent, so there
+was nothing to guard there.
+
+**Tested on both drivers** (9 scenarios × 2): under own branch → created at the right URI; under
+another department → 403, nothing created; at the root (no `_parent`, empty, or the root page) →
+403 for a member, 200 for a root-territory member; a parent not in the tree → 403; a sub-territory
+admin confined to their branch, not the parent's; a flat collection judged by route and terms — a
+branch member refused, a collection territory allowed, a term territory allowed only when the
+submitted values carry the term; the create screen refused for an outside parent; super exempt.
+Fixture: the shared `editor` role gained `create news entries` (core `store` authorization).
