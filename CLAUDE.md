@@ -33,8 +33,11 @@ when run with `SPIKE_DRIVER=eloquent`. Do not publish the driver's config into t
 
 - Tests, from this repo: `vendor/bin/pest`
 - Formatting, from this repo: `vendor/bin/pint`
-- Control panel assets, from this repo: `npm install && npm run build` — not scaffolded yet;
-  arrives with the first CP screen (Phase 4)
+- Control panel assets, from this repo: `npm install && npm run build`. The build under
+  `resources/dist/build` is committed (an addon ships its assets); CI fails if it is stale.
+  After a rebuild, refresh the host's copy:
+  `cd /Users/bpmore/Herd/statamic-dev && php artisan vendor:publish --tag=delegated --force`
+  (not `--provider=…`, which also copies the config and migrations into the host).
 - Statamic commands run from the host site, never here:
   `cd /Users/bpmore/Herd/statamic-dev && php please <command>`
 - Laravel commands in the host use `artisan`, not `please`: `php artisan migrate`.

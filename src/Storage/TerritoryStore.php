@@ -26,6 +26,32 @@ final class TerritoryStore
 
     /**
      * @param  array<string, mixed>  $columns  name, slug, site, scope_type, scope_ref, parent_id
+     * @return int the new territory's id
+     */
+    public function createTerritory(array $columns): int
+    {
+        $columns['scope_ref'] = Normalise::ref(ScopeType::from((string) $columns['scope_type']), (string) $columns['scope_ref']);
+
+        $id = (int) $this->table('delegated_territories')->insertGetId($columns + ['created_at' => now(), 'updated_at' => now()]);
+
+        $this->resolver->invalidate();
+
+        return $id;
+    }
+
+    /**
+     * Assignments go with it (cascade); children become roots (null on
+     * delete). The audit log keeps the record.
+     */
+    public function deleteTerritory(int $id): void
+    {
+        $this->table('delegated_territories')->where('id', $id)->delete();
+
+        $this->resolver->invalidate();
+    }
+
+    /**
+     * @param  array<string, mixed>  $columns  name, slug, site, scope_type, scope_ref, parent_id
      */
     public function updateTerritory(int $id, array $columns): void
     {

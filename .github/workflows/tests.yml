@@ -57,3 +57,33 @@ jobs:
 
       - name: Pint
         run: vendor/bin/pint --test
+
+  assets:
+    name: Control panel assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The Vite plugin comes from vendor/statamic/cms, so Composer runs first.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      # The build is committed, because an addon ships its assets rather than
+      # asking every site to run a build. A change to resources/js that was
+      # not rebuilt and committed would ship the old bundle.
+      - name: Committed build is current
+        run: git diff --exit-code -- resources/dist

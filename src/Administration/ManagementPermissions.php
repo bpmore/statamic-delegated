@@ -26,6 +26,9 @@ final class ManagementPermissions
         'impersonate users',
         // EntryPolicy::before() returns true for this one (Phase 0.1).
         'configure collections',
+        // Delegated's own site-administration permission: creating and
+        // reshaping territories is the widest escalation there is.
+        'manage territories',
     ];
 
     /**

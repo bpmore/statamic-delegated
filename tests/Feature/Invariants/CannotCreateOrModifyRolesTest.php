@@ -39,6 +39,8 @@ const MANAGEMENT_PERMISSIONS = [
     // Not a user permission, but EntryPolicy::before() treats it as super
     // (Phase 0.1). Handing it out ends the territory model.
     'configure collections',
+    // Delegated's own: whoever can create territories can create a root one.
+    'manage territories',
 ];
 
 beforeEach(function () {

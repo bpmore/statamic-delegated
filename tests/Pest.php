@@ -13,7 +13,7 @@ use Bpmore\StatamicDelegated\Tests\TestCase;
 // EloquentTestCase). Pest does not let a nested directory override its
 // parent's test case, so the flat-file directories are named one by one; a
 // new directory under Feature has to be added here.
-uses(TestCase::class)->in('Feature/*.php', 'Feature/Invariants', 'Feature/Scoping');
+uses(TestCase::class)->in('Feature/*.php', 'Feature/Invariants', 'Feature/Scoping', 'Feature/CP');
 uses(EloquentTestCase::class)->in('Feature/Eloquent');
 
 /**

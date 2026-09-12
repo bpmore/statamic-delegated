@@ -43,7 +43,7 @@
 - [x] Super users explicitly exempt, and documented as such
 
 ## Phase 4 — Territory management
-- [ ] CP screens: territories, assignments, membership
+- [x] CP screens: territories, assignments, membership — site-administration screen; not yet clicked through in a browser
 - [ ] Territory admin self-service, constrained by the Phase 2 invariants
 - [ ] Audit log, scoped per territory
 - [ ] `delegated:doctor` — orphaned territories, entries with no owner
@@ -901,3 +901,47 @@ non-super user administrator); console commands and queue jobs. `LICENSE.md` and
 already said the first two.
 
 **Phase 3 complete.** 350 tests, both drivers.
+
+### Phase 4.1 — CP screen: territories, assignments, membership (2026-09-12)
+
+**How an addon renders a Statamic 6 page** (no sibling precedent; read from the built CP bundle):
+the CP's Inertia resolver tries its own `pages/*.vue` first, then a registry exposed to addons as
+`inertia` from `@statamic/cms/api` — `inertia.register('delegated/Territories', Component)` — and
+applies the CP layout itself. `@statamic/cms/inertia` (different module, same word) is Inertia's
+`router`/`useForm`/`Head`. `@statamic/cms/ui` is the UI kit (Header, Table*, Modal,
+ConfirmationModal, Field, Input, Select, Badge, Dropdown*, EmptyState*…; props read from the
+package's `.d.ts`). HTTP: `$axios` from the app's global properties, as the sibling found. The
+Vite scaffold mirrors the sibling (`@statamic/cms/vite-plugin`, externals, `manifest.json` at the
+build root); the build is committed and an `assets` CI job fails if it is stale. Publish into the
+host with `vendor:publish --tag=delegated` — the tag is the addon slug; `--provider=…` also copies
+config and migrations (done once by mistake, reverted).
+
+**Built.** A **site-administration** screen: a new permission `manage territories` (registered in
+a "Delegated" group; super users pass it; added to `ManagementPermissions` so a territory admin can
+never be granted it — the invariant-4 dataset gained it too), a nav item under Users, CP routes
+under `cp/delegated/territories` behind `can:manage territories`, `TerritoriesController` (Inertia
+page + JSON index, store, update, destroy) and `AssignmentsController` (store = upsert, destroy),
+writing through `TerritoryStore` (gained `createTerritory`/`deleteTerritory`) — **not** through
+`TerritoryAdministration`: the Phase 2 invariants constrain territory admins, not site
+administrators; 4.2's self-service will use the contract. `TerritoryRequest` refuses with a
+message everything the database would refuse: slug format and uniqueness per site, site exists,
+scope type, scope ref normalised then checked (branch starts with `/`, collection exists, term
+exists and is `taxonomy::slug`), one territory per scope per site (with "assign more groups to it
+instead"), parent exists, same site, not self, not a descendant; a missing territory is 404 before
+it is 422. Every write invalidates the resolver, and the tests read ownership back through it.
+The page: table of territories (site, scope badge, parent, member count), create/edit modal with
+slug auto-derived from the name, members modal (list with level badges, add user/group at a level,
+remove), delete confirmation that says what happens to nested territories and to the content.
+
+**Tested** (`TerritoriesScreenTest`, 11): permission gate (HTML redirected away, JSON 403, manager
+and super 200); Inertia component and props; listing with parent names and labelled assignments;
+create + normalise + resolver sees it; ten validation cases incl. same slug allowed on another
+site; collection and term scopes; update, self/descendant parent refused, missing → 404; delete
+cascades assignments, children become roots, resolver forgets; assignments add/upsert/remove with
+`granted_by`; bad subjects/levels 422; the committed build's manifest names a file that exists.
+
+**⚠️ Not done: the page has not been exercised in a browser.** The Claude-in-Chrome extension was
+not connected in this session. The Vue SFC compiles and every endpoint it calls is tested, but a
+prop-name or slot mistake against the UI kit would only show at runtime. Open
+`http://statamic-dev.test/cp/delegated/territories` as the host's super user (assets are
+published there) and try create → members → edit → delete before treating 4.1 as finished.

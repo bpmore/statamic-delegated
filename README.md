@@ -78,6 +78,7 @@ across projects.
 composer install
 vendor/bin/pest            # tests
 vendor/bin/pint            # formatting
+npm install && npm run build   # control panel assets (the build is committed)
 ```
 
 The suite runs every enforcement scenario twice: under `tests/Feature` with entries in the

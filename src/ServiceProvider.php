@@ -21,6 +21,8 @@ use Bpmore\StatamicDelegated\Resolution\TerritoryResolver;
 use Bpmore\StatamicDelegated\Resolution\TerritorySource;
 use Bpmore\StatamicDelegated\Storage\TerritoryStore;
 use Illuminate\Contracts\Foundation\Application;
+use Statamic\Facades\CP\Nav;
+use Statamic\Facades\Permission;
 use Statamic\Providers\AddonServiceProvider;
 
 class ServiceProvider extends AddonServiceProvider
@@ -43,6 +45,15 @@ class ServiceProvider extends AddonServiceProvider
     // The hidden listing filter that confines the users listing. See the class.
     protected $scopes = [
         Scopes\VisibleUsers::class,
+    ];
+
+    protected $routes = [
+        'cp' => __DIR__.'/../routes/cp.php',
+    ];
+
+    protected $vite = [
+        'input' => ['resources/js/cp.js'],
+        'publicDirectory' => 'resources/dist',
     ];
 
     // Enforcement points that are middleware. Each acts only on the routes
@@ -111,6 +122,24 @@ class ServiceProvider extends AddonServiceProvider
         $this->publishes([
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'delegated-migrations');
+
+        // Site administration of territories: one permission, one nav item.
+        // Super users pass the permission by definition; a territory admin can
+        // never be granted it through Delegated (ManagementPermissions).
+        Permission::extend(function () {
+            Permission::group('delegated', 'Delegated', function () {
+                Permission::register('manage territories')
+                    ->label(__('Manage territories'))
+                    ->description(__('Create, reshape and delete territories, and assign anyone to them.'));
+            });
+        });
+
+        Nav::extend(function ($nav) {
+            $nav->users('Territories')
+                ->route('delegated.territories.index')
+                ->icon('users')
+                ->can('manage territories');
+        });
 
         // Enforcement points, one class per control-panel surface from the
         // Phase 0.1 inventory. Each registers itself; none does anything for
