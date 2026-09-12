@@ -32,6 +32,32 @@ that; a confirmed cross-territory exposure is fixed or mitigated within 30 days.
 [`SECURITY.md`](SECURITY.md) has the full policy, including what is in and out
 of scope.
 
+## Who Delegated does not restrict
+
+Some people bypass everything Delegated does, by design, and the product is safer
+for saying so than for pretending otherwise.
+
+- **Super users.** Statamic exempts them from every policy check, and so does
+  Delegated: a super user sees every entry, every branch, every user, on every
+  screen, whether or not they are also listed in a territory. Being listed as
+  head of a department never narrows what a super user can do.
+- **Anyone holding the `configure collections` permission.** Statamic's own
+  entry policy treats that permission as a full bypass (`EntryPolicy::before()`
+  returns true for it), so restricting the listing for such a user would only be
+  theatre. Delegated treats it as super-equivalent for *content*. A territory
+  admin can never hand it out (Phase 2, invariant 4); who holds it is the
+  site's decision.
+- **People in no territory at all, on the users screens only.** Delegated
+  confines a territory member's view of Statamic's users screens to the people
+  they administer. Someone who belongs to no territory is left to Statamic's own
+  user permissions — that is how a site keeps a non-super user administrator.
+  Their view of *content* is still nothing, because nothing is theirs.
+- **Console commands and queue jobs.** There is no signed-in user to confine.
+
+Everyone else — every territory member and territory admin, whatever roles they
+hold — is confined to their territories on every control-panel surface listed
+in `PROGRESS.md`'s inventory.
+
 ## Requirements
 
 - PHP 8.3 or later

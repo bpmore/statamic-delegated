@@ -40,7 +40,7 @@
   - [x] 3.2.g Relationship picker index — scope the fieldtype's query
   - [x] 3.2.h Users listing — a territory admin holding `view users` sees only visible users
   - [x] 3.2.i Direct-URL oracles (`cp/edit/{id}`, `{entry}/{slug}` redirect) — 404 outside territory
-- [ ] Super users explicitly exempt, and documented as such
+- [x] Super users explicitly exempt, and documented as such
 
 ## Phase 4 — Territory management
 - [ ] CP screens: territories, assignments, membership
@@ -879,3 +879,25 @@ a denial test: listing + search (3.1), policy layer / edit / update / publish / 
 (3.2.b), create-under-parent (3.2.c), structure tree GET (3.2.d) and PATCH + flat reorder (3.2.e),
 nav tree GET and PATCH (3.2.f), relationship picker (3.2.g), users listing and user screens
 (3.2.h), redirect oracles (3.2.i). REST and GraphQL remain out of scope by design (userless).
+
+### Phase 3.3 — Exemptions pinned and documented (2026-09-12)
+
+The exemption was already in code (`Enforcement\Exempt` for content: super users, `configure
+collections` holders, no user; `Enforcement\UserVisibility` for the users screens: super users
+and people in no territory). This task pins it as a *rule* and sweeps it: `tests/Support/
+Exemptions` (5 scenarios × 2 drivers) states both rules directly, then takes **a super user who is
+also assigned to a territory** — a site owner listed as head of a department — and a
+`configure collections` holder likewise listed, and checks that membership never narrows what the
+exemption grants: every ability on every page, the listing, the tree (nothing redacted), the
+picker, the redirect oracles, the edit screen; creating under another department's parent and
+moving that department under another. A control keeps the ordinary member alongside them as
+confined as ever — the exemption is about the person, not the territory. One subtlety pinned: a
+`configure collections` holder is exempt for *content* but, if listed in a territory, confined on
+the users screens like any member (that permission is about collections, not people).
+
+README gained "Who Delegated does not restrict": super users; `configure collections` holders
+(with Statamic's own reason); people in no territory, on the users screens only, and why (a
+non-super user administrator); console commands and queue jobs. `LICENSE.md` and `SECURITY.md`
+already said the first two.
+
+**Phase 3 complete.** 350 tests, both drivers.
