@@ -83,10 +83,13 @@ final class TerritoryScope
 
     /**
      * A term territory as an id list. `whereTaxonomy()` cannot be used inside
-     * the OR-group (both drivers drop it there), and the data column a terms
-     * field writes to is the *field's* handle, not the taxonomy's, so it
-     * cannot be named without reading every blueprint. The id list is
-     * resolved once per request per territory; term territories are for
+     * the OR-group (both drivers drop it there), and `whereJsonContains` on
+     * the taxonomy's field is not the same test: the Stache's version
+     * rejects a non-array value, while Statamic's own association wraps and
+     * slugs whatever a `max_items: 1` field stored. Resolving through
+     * `whereTaxonomy` at the top level keeps this in step with the policy
+     * layer, which reads the same association (Enforcement\Facts). The list
+     * is resolved once per request per territory; term territories are for
      * sites that are not tree-shaped, and are few.
      *
      * @return list<string>

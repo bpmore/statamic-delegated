@@ -42,5 +42,12 @@ abstract class TestCase extends AddonTestCase
         // is Delegated. Without this the CountUsers middleware refuses any
         // control-panel request once a second user exists.
         config(['statamic.editions.pro' => true]);
+
+        // Anything else Statamic writes during a test lands in the same
+        // wiped directory: search indexes, revisions.
+        config([
+            'statamic.search.drivers.local.path' => $this->fakeStacheDirectory.'/search',
+            'statamic.revisions.path' => $this->fakeStacheDirectory.'/revisions',
+        ]);
     }
 }

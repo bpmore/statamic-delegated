@@ -6,6 +6,7 @@ namespace Bpmore\StatamicDelegated;
 
 use Bpmore\StatamicDelegated\Administration\DelegatedAdministration;
 use Bpmore\StatamicDelegated\Administration\TerritoryAdministration;
+use Bpmore\StatamicDelegated\Enforcement\GuardsEntryAbilities;
 use Bpmore\StatamicDelegated\Enforcement\ScopesEntryListings;
 use Bpmore\StatamicDelegated\Resolution\DatabaseTerritorySource;
 use Bpmore\StatamicDelegated\Resolution\TerritoryResolver;
@@ -77,5 +78,6 @@ class ServiceProvider extends AddonServiceProvider
         // Phase 0.1 inventory. Each registers itself; none does anything for
         // a user Exempt::user() names.
         $this->app->make(ScopesEntryListings::class)->register();
+        $this->app->make(GuardsEntryAbilities::class)->register();
     }
 }

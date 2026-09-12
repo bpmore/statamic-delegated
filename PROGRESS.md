@@ -30,7 +30,16 @@
 
 ## Phase 3 — Enforcement
 - [x] Query scoping (or documented post-filter fallback with its limits stated) — scoped before execution on both drivers, no fallback needed
-- [ ] One task per surface from the Phase 0 inventory, each with a denial test
+- [ ] One task per surface from the Phase 0 inventory, each with a denial test:
+  - [x] 3.2.a Policy layer — every entry ability territory-aware via the Gate; closes edit screen, direct URL, update, publish/unpublish, live preview, revisions, nav page edit, picker `data`, command palette, built-in delete/publish/unpublish actions
+  - [ ] 3.2.b `duplicate_entry` — require `view` on the source; not offered on out-of-territory items
+  - [ ] 3.2.c Create under a parent — `_parent` (store, preview.create, title-format.create) must be inside territory
+  - [ ] 3.2.d Structure tree GET — authorize the collection, prune branches outside territory
+  - [ ] 3.2.e Structure tree PATCH and flat reorder — moves confined to territory; `deletedEntries` checked
+  - [ ] 3.2.f Navigation tree GET and PATCH — linked entries outside territory hidden / not linkable
+  - [ ] 3.2.g Relationship picker index — scope the fieldtype's query
+  - [ ] 3.2.h Users listing — a territory admin holding `view users` sees only visible users
+  - [ ] 3.2.i Direct-URL oracles (`cp/edit/{id}`, `{entry}/{slug}` redirect) — 404 outside territory
 - [ ] Super users explicitly exempt, and documented as such
 
 ## Phase 4 — Territory management
@@ -637,3 +646,38 @@ under `Feature` must be added there; closures inside `it()` are rebound to the t
 **Not yet scoped (next surfaces):** relationship picker index, tree GET/PATCH, nav tree, the
 policy layer for single-entry abilities, bulk actions/duplicate, create-under-parent, users
 listing — each a Phase 3.2 task with its own denial test.
+
+### Phase 3.2.a — Policy layer (2026-09-11)
+
+**Built.** `Enforcement\GuardsEntryAbilities` registers one `Gate::before` callback: for any
+ability whose arguments include an `Entry`, deny if `Territorial::allows($user, $entry)` is false;
+otherwise return null and let Statamic's `EntryPolicy` decide as before. `Territorial` = exempt, or
+the resolver's `containing(Facts::of($entry))` intersected with the user's membership; site
+default (no containing territory) is a denial for every non-exempt user. `Enforcement\Facts` is
+the **only** place an `Entry` becomes `ContentFacts`: `uri` is `Entry::uri()` (what the listing's
+`uri` clause compares on both drivers) and terms are read the way Statamic associates entries with
+terms for `whereTaxonomy` — the value under the *taxonomy's* handle, wrapped and slugged
+(`TaxonomyTermsStore::sync`) — so listing and policy cannot drift. `Gate::before` rather than a
+policy subclass: every ability is covered, including ones a site or another addon adds, and a site
+that binds its own `EntryPolicy` is not fought with; `Gate::before` runs ahead of the policy's own
+`before()`, so the super/`configure collections` bypass is honoured explicitly via `Exempt`.
+
+**Tested on both drivers** (`tests/Support/AbilityScoping`, 20 scenarios × 2): all five abilities
+denied outside and allowed inside (`view/edit/update/delete/publish`); no territory → everything
+denied; term and collection territories in single-entry checks; the orphan reachable only through a
+root territory; super and `configure collections` exempt; **Statamic's own permissions still deny
+inside the territory** (the Gate says nothing there). Surfaces, each with denial + control: edit
+screen and direct URL (403/200), update (403 and unchanged / 200 and changed), publish and
+unpublish, live preview, revision history, navigation page editor for a branch linked to an
+outside entry, relationship-picker `data` (outside → `invalid`), command palette search (outside
+absent, inside present, super sees it), bulk `delete`/`unpublish` neither offered nor run — a
+mixed selection refused whole, inside runs. `Facts` pinned directly on a two-term entry.
+
+Corrected: the id-list comment in `TerritoryScope` — the real reason is that the Stache's
+`filterWhereJsonContains` rejects a non-array value while Statamic's association wraps a
+`max_items: 1` string, so `whereTaxonomy` at the top level is the faithful test. Test-side: the
+real CP form always sends `published`; a PATCH without it is fine on the Stache and violates the
+Eloquent column's NOT NULL — the payloads now send it.
+
+Still open on this surface, by design: `duplicate_entry` is still offered on outside items
+(3.2.b) — the bulk test asserts only `delete`/`unpublish`.
