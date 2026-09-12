@@ -24,7 +24,7 @@
 - [x] Cannot add a user to a territory they do not administer — written failing, parked as `todo` until 2.7
 - [x] Cannot edit, demote or delete a super user — written failing, parked as `todo` until 2.7
 - [x] Cannot create or modify roles — structural half passing now; behavioural half written failing, parked as `todo` until 2.7
-- [ ] Cannot widen their own territory
+- [x] Cannot widen their own territory — written failing, parked as `todo` until 2.7
 - [ ] Cannot see users with no overlapping assignment
 - [ ] All six failing, then all six passing
 
@@ -502,3 +502,19 @@ role still grants. Super exempt. Un-marked run: **19 failed, 1 passed** (the str
 Flagged for Phase 3/4, not this invariant: `view users` is *not* in the set, but a territory admin
 holding it sees every user through **Statamic's own** users listing, which is invariant 6's
 concern on a surface Delegated does not yet touch. The users listing joins the enforcement list.
+
+**Invariant 5 — cannot widen their own territory** (`CannotWidenOwnTerritoryTest`, 14 tests).
+Decision: rather than define "wider" and get it wrong once, a territory's **scope is immutable to
+anyone who administers it** — `scope_type`, `scope_ref`, `parent_id`, `site` — and to anyone who
+administers an ancestor, since a widened child widens what flows down to them (Phase 1.4). An
+admin may change a name (control test: rename succeeds, scope untouched). Refused with
+`OWN_TERRITORY`, nothing changed: widening to `/`; moving sideways to `/oncology` (not wider, but
+not theirs); **narrowing** (looks harmless; refused because "immutable" has no edge cases and "may
+only shrink" has several — not undoable by them, and a narrowed parent under a wide child is a
+shape nobody meant); changing the scope *kind* (a branch becoming a collection is the whole
+collection); re-parenting their own territory (to null or under another); **making another
+territory a child of theirs** (would make them its admin); widening or re-parenting a *child* they
+administer; moving to another site; a rename mixed with a scope change (refused whole, name
+unchanged); an unrecognised key, including `id` (never "harmless"). Boundary: a member (not admin)
+and a non-administered territory are refused even a rename. Super exempt. Un-marked run:
+**14 failed** (unbound contract).
