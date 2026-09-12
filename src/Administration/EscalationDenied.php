@@ -29,6 +29,8 @@ final class EscalationDenied extends RuntimeException
 
     public const USER_NOT_VISIBLE = 'user_not_visible';
 
+    public const USER_SHARED = 'user_shared';
+
     private function __construct(public readonly string $invariant, string $message)
     {
         parent::__construct($message);
@@ -63,5 +65,15 @@ final class EscalationDenied extends RuntimeException
     public static function userNotVisible(string $userId): self
     {
         return new self(self::USER_NOT_VISIBLE, "Cannot act on user {$userId}: no assignment overlaps the actor's territories");
+    }
+
+    /**
+     * A refinement of invariant 6: a user who also belongs to a territory the
+     * actor does not administer can be seen, but not changed — roles and
+     * emails are global, and editing them reaches into the other department.
+     */
+    public static function userShared(string $userId): self
+    {
+        return new self(self::USER_SHARED, "Cannot change user {$userId}: they also belong to a territory the actor does not administer");
     }
 }

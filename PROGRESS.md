@@ -25,7 +25,7 @@
 - [x] Cannot edit, demote or delete a super user — written failing, parked as `todo` until 2.7
 - [x] Cannot create or modify roles — structural half passing now; behavioural half written failing, parked as `todo` until 2.7
 - [x] Cannot widen their own territory — written failing, parked as `todo` until 2.7
-- [ ] Cannot see users with no overlapping assignment
+- [x] Cannot see users with no overlapping assignment — written failing, parked as `todo` until 2.7
 - [ ] All six failing, then all six passing
 
 ## Phase 3 — Enforcement
@@ -518,3 +518,23 @@ administer; moving to another site; a rename mixed with a scope change (refused 
 unchanged); an unrecognised key, including `id` (never "harmless"). Boundary: a member (not admin)
 and a non-administered territory are refused even a rename. Super exempt. Un-marked run:
 **14 failed** (unbound contract).
+
+**Invariant 6 — cannot see users with no overlapping assignment**
+(`CannotSeeUsersOutsideTerritoryTest`, 15 tests). Two decisions. **Visibility is downward only**:
+`visibleUsers(actor)` = users assigned, directly or through a group, to a territory the actor
+*administers* or a descendant of it — never an ancestor, or the head of cardiology could act on
+the site-wide editors who administer them. A member who administers nothing sees nobody (the
+user-management surface is for admins). **Seeing is looser than changing**: a user who also
+belongs to a territory the actor does not administer is visible but *read-only* to them — roles
+and emails are global, and editing them reaches into the other department — refused with a new
+seventh reason, `EscalationDenied::USER_SHARED`; removing that user from the actor's *own*
+territory is still allowed. `updateUser`/`setRoles`/`deleteUser` on an invisible user (data-driven:
+oncology-only, oncology-via-group, site-wide, unassigned, super) → `USER_NOT_VISIBLE`, nothing
+changed. Visibility tracks assignments live (removed from the last overlapping territory → gone
+from the list and un-actionable at once). Controls: a wholly-owned user can be renamed and
+deleted; super sees everyone. Un-marked run: **15 failed** (unbound contract).
+
+Decision recorded for Phase 4: `addMember` deliberately does **not** require the target to be
+visible — it is the act that creates the overlap. The admin UI should add by email/id, not from a
+list; this leaves a small existence oracle (success vs. error tells the admin an id exists),
+accepted and to be documented.
