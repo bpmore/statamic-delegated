@@ -29,7 +29,7 @@
 - [x] All six failing, then all six passing — 81 red, then 84 green; full suite 161
 
 ## Phase 3 — Enforcement
-- [ ] Query scoping (or documented post-filter fallback with its limits stated)
+- [x] Query scoping (or documented post-filter fallback with its limits stated) — scoped before execution on both drivers, no fallback needed
 - [ ] One task per surface from the Phase 0 inventory, each with a denial test
 - [ ] Super users explicitly exempt, and documented as such
 
@@ -579,3 +579,61 @@ before any invariant is consulted, writing nothing; assignment cleanup on delete
 already go through one class, so the wrap is mechanical); an `Actor` factory from the signed-in
 Statamic user for the CP; the users-listing surface flagged under invariant 4; the `addMember`
 existence oracle recorded under invariant 6.
+
+### Phase 3.1 — Query scoping (2026-09-11)
+
+**Built.** `Scoping\TerritoryScope::apply($query, $territories)` — the Phase 0.3 compiled form as
+code: one nested OR-group, one member per territory, each bound to its site; a branch is
+`uri = X OR uri LIKE 'X/%'`; a collection is `collectionHandle = X` (Stache/search) or
+`collection = X` (Eloquent) — the single driver-specific token, chosen by `instanceof
+EloquentQueryBuilder`; a term is an **id list** resolved once per request per territory (nested
+`whereTaxonomy` is dropped by both drivers, and the data column a terms field writes to is the
+*field's* handle, not the taxonomy's, so it cannot be named without reading every blueprint); an
+empty territory set compiles to `whereIn('id', [])` — never to no predicate, which on the Stache
+means everything. `Enforcement\ScopesEntryListings` registers it on Statamic's
+`EntriesIndexQuery::hook('query')` (closing over its dependencies, since `Hookable` rebinds
+`$this`); `Enforcement\Exempt` names who is not restricted (super users, `configure collections`
+holders, and no-user contexts). `Resolution\Subjects::of($user)` and
+`TerritoryResolver::territoriesFor($subjects)` complete the path from signed-in user to predicate.
+**No post-filter fallback was needed**: both drivers scope before execution with correct totals.
+
+**Tested on both drivers, in this repo.** `statamic/eloquent-driver ^5.11` is now a `require-dev`
+dependency; `tests/EloquentTestCase` registers its provider and flips only `entries` to Eloquent
+by setting config in `resolveApplicationConfiguration()` (the one hook that runs between
+`LoadConfiguration` and `RegisterProviders` — `defineEnvironment()` is too late), then migrates
+the driver's string-id entries table by path in `setUp()`. `tests/Support/ListingScoping` holds
+the 13 scenarios once; `tests/Feature/Scoping` runs them on the Stache and `tests/Feature/
+Eloquent` on the database, with `DriverTest` guarding that the driver really took over. Every
+scenario is a denial (sibling prefix, orphan, home, other department, no territory → total 0,
+union without collapse, term, collection, root, search path) plus the two exemptions.
+
+**⚠️ Decision that deviates from the spec: PHP floor is now `^8.3`, not `^8.2`.** Every release
+of `statamic/eloquent-driver` requires 8.3, as do Laravel 13 and the `statamic/statamic` skeleton;
+Statamic 6 reaches 8.2 only via Laravel 12. A security product that promises both drivers must
+test both in CI, and that needs the driver installable in this repo. The CI matrix is 8.3/8.4.
+Reverting is one constraint line plus moving the Eloquent tests out of CI. Recorded in CLAUDE.md
+and the README.
+
+**Decision that revises Phase 1.4: a root (`/`) territory is the whole site, orphans included.**
+Found by the Eloquent run: on that driver `Entry::uri()` *is* the stored `uri` column — an entry
+outside its tree gets a route-derived URI as if it sat at the root (`/stray`), and one dropped from
+the tree keeps its last URI until re-saved (`DriverTest` pins both). On the Stache both are null.
+"Orphans belong to nobody" therefore cannot be made true on both drivers by a URI predicate, but
+"root means everything" can, and is what a `/` grant means. Below the root nothing changes: a
+non-root branch never matches an orphan on either driver, so the Phase 0.1 duplicate-entry
+exfiltration stays closed. The dropped-from-tree difference is not a cross-territory exposure
+(the last URI was inside the old territory) and is now listed in SECURITY.md's out-of-scope.
+
+**Statamic Pro is required** — `CountUsers` refuses any CP request once a second user exists in
+the Solo edition; `TestCase` sets `statamic.editions.pro`. Added to the README requirements.
+
+**Pest gotchas recorded:** `beforeEach()` attaches to the file that *calls* it while `it()`
+attaches to the test file, so a hook registered from a Support class never runs (the scenarios
+expose `setUp()` for the test file's own `beforeEach`); a nested directory cannot override its
+parent's `uses()`, so `Pest.php` names the flat-file directories one by one — a new directory
+under `Feature` must be added there; closures inside `it()` are rebound to the test case, so
+`self::` in a Support class is the test class.
+
+**Not yet scoped (next surfaces):** relationship picker index, tree GET/PATCH, nav tree, the
+policy layer for single-entry abilities, bulk actions/duplicate, create-under-parent, users
+listing — each a Phase 3.2 task with its own denial test.

@@ -23,13 +23,14 @@
         }
     ],
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
         "statamic/cms": "~6.31.0"
     },
     "require-dev": {
         "laravel/pint": "^1.18",
         "orchestra/testbench": "^10.8 || ^11.0",
-        "pestphp/pest": "^3.0"
+        "pestphp/pest": "^3.0",
+        "statamic/eloquent-driver": "^5.11"
     },
     "autoload": {
         "psr-4": {

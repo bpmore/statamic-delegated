@@ -34,7 +34,9 @@ of scope.
 
 ## Requirements
 
-- PHP 8.2 or later
+- PHP 8.3 or later
+- Statamic 6 **Pro** — roles, permissions and more than one user are Pro features, and so
+  is everything Delegated does
 - Statamic 6, within the range named in `composer.json`. The constraint is
   deliberately not open-ended: the addon reaches into control-panel internals
   that are not a published interface, so each minor is verified before the range
@@ -51,6 +53,10 @@ composer install
 vendor/bin/pest            # tests
 vendor/bin/pint            # formatting
 ```
+
+The suite runs every enforcement scenario twice: under `tests/Feature` with entries in the
+flat-file Stache, and under `tests/Feature/Eloquent` with entries in the database through
+`statamic/eloquent-driver`. A scenario that passes on one driver and not the other is a bug.
 
 `recon/` holds the reconnaissance probes that produced the enforcement-surface
 inventory in `PROGRESS.md`. They run from a host site, not from this repository,

@@ -60,11 +60,12 @@ it('does not contain the parent of the branch, or an unrelated branch', function
         ->and($map->containing(page('/')))->toBe([]);
 });
 
-it('gives an orphan entry, with no URI, no territory at all', function () {
+it('gives an orphan entry, with no URI, no territory below the root', function () {
     // Not in the tree means under no branch — it belongs to nobody, never to
-    // everybody. This is the property that closes the duplicate-entry
-    // exfiltration found in Phase 0.1.
-    $map = new TerritoryMap([branch(1, '/cardiology'), branch(2, '/')]);
+    // a department. This is the property that closes the duplicate-entry
+    // exfiltration found in Phase 0.1: a copy that lands outside the tree
+    // is not readable by the department that made it.
+    $map = new TerritoryMap([branch(1, '/cardiology'), branch(2, '/cardiology/trials'), branch(3, '/oncology')]);
 
     $orphan = new ContentFacts('default', 'pages', null);
 
@@ -72,11 +73,15 @@ it('gives an orphan entry, with no URI, no territory at all', function () {
         ->and($map->owner($orphan))->toBeNull();
 });
 
-it('treats a root branch as covering every entry that has a URI', function () {
+it('treats a root branch as the whole site, orphans included', function () {
+    // The one reading both drivers can honour: on Eloquent an orphan carries
+    // a root-level URI, on the flat-file driver none. Someone granted `/`
+    // was granted everything.
     $map = new TerritoryMap([branch(1, '/')]);
 
     expect(ids($map->containing(page('/'))))->toBe([1])
-        ->and(ids($map->containing(page('/anything/at/all'))))->toBe([1]);
+        ->and(ids($map->containing(page('/anything/at/all'))))->toBe([1])
+        ->and(ids($map->containing(new ContentFacts('default', 'pages', null))))->toBe([1]);
 });
 
 it('compares URIs case-insensitively and ignores trailing slashes', function () {

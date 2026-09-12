@@ -2,12 +2,19 @@
 
 declare(strict_types=1);
 
+use Bpmore\StatamicDelegated\Tests\EloquentTestCase;
 use Bpmore\StatamicDelegated\Tests\TestCase;
 
 // Everything under Feature gets a booted Statamic. Anything that can be tested
 // without one — territory resolution, the escalation invariants' pure parts —
 // belongs under Unit and stays fast.
-uses(TestCase::class)->in('Feature');
+//
+// Feature/Eloquent gets the same Statamic with entries in the database (see
+// EloquentTestCase). Pest does not let a nested directory override its
+// parent's test case, so the flat-file directories are named one by one; a
+// new directory under Feature has to be added here.
+uses(TestCase::class)->in('Feature/*.php', 'Feature/Invariants', 'Feature/Scoping');
+uses(EloquentTestCase::class)->in('Feature/Eloquent');
 
 /**
  * The repository root.

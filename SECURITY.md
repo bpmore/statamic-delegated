@@ -83,6 +83,11 @@ normal issue if the documentation is unclear:
 - Anything a super user, or a holder of `configure collections`, can do.
   Statamic treats both as unrestricted and so does Delegated.
 - Assets. Not covered in v1.
+- An entry removed from its collection's tree without being deleted. On the
+  Eloquent driver it keeps its last URI (Statamic's own behaviour) and so stays
+  visible to the department that owned it until it is saved again; on the
+  file driver it has no URI and belongs to nobody. Neither reading exposes it
+  to another department.
 - Behaviour on a Statamic version outside the range in `composer.json`. That
   said, please report it anyway: it tells us what the next verification needs
   to check before the range is widened.

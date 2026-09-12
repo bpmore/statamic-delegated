@@ -6,6 +6,7 @@ namespace Bpmore\StatamicDelegated;
 
 use Bpmore\StatamicDelegated\Administration\DelegatedAdministration;
 use Bpmore\StatamicDelegated\Administration\TerritoryAdministration;
+use Bpmore\StatamicDelegated\Enforcement\ScopesEntryListings;
 use Bpmore\StatamicDelegated\Resolution\DatabaseTerritorySource;
 use Bpmore\StatamicDelegated\Resolution\TerritoryResolver;
 use Bpmore\StatamicDelegated\Resolution\TerritorySource;
@@ -72,7 +73,9 @@ class ServiceProvider extends AddonServiceProvider
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'delegated-migrations');
 
-        // Enforcement is deliberately absent until the Phase 2 escalation
-        // invariants exist as tests (see PROGRESS.md).
+        // Enforcement points, one class per control-panel surface from the
+        // Phase 0.1 inventory. Each registers itself; none does anything for
+        // a user Exempt::user() names.
+        $this->app->make(ScopesEntryListings::class)->register();
     }
 }

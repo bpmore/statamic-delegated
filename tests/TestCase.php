@@ -37,5 +37,10 @@ abstract class TestCase extends AddonTestCase
 
         app(RoleRepository::class)->path($this->fakeStacheDirectory.'/roles.yaml');
         app(UserGroupRepository::class)->path($this->fakeStacheDirectory.'/groups.yaml');
+
+        // Roles, permissions and more than one user are Pro features, and so
+        // is Delegated. Without this the CountUsers middleware refuses any
+        // control-panel request once a second user exists.
+        config(['statamic.editions.pro' => true]);
     }
 }

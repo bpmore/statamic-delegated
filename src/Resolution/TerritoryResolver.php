@@ -62,6 +62,23 @@ final class TerritoryResolver
     }
 
     /**
+     * The territories the subjects are in — as Territory objects, ready for
+     * the query compiler or a policy check.
+     *
+     * @param  list<string>  $subjects
+     * @return list<Territory>
+     */
+    public function territoriesFor(array $subjects): array
+    {
+        $map = $this->map();
+
+        return array_values(array_filter(array_map(
+            fn (int $id): ?Territory => $map->find($id),
+            $this->membershipFor($subjects)->territoryIds(),
+        )));
+    }
+
+    /**
      * Forget every cached copy of the map, everywhere. Called after any write
      * to a territory or an assignment. Cheap: one counter, no scanning.
      */

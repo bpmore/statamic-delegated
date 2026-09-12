@@ -23,7 +23,9 @@ when run with `SPIKE_DRIVER=eloquent`. Do not publish the driver's config into t
   to `statamic/cms` 5.x, that is a bug: fix the constraint and re-resolve before doing any
   further work. Statamic 6 has a different control panel, Vue 3 + Inertia, and different
   extension points; anything built against 5.x will have to be rewritten.
-- **PHP:** `^8.2`
+- **PHP:** `^8.3` — the spec said `^8.2`, but Laravel 13, the `statamic/statamic` skeleton and
+  every release of `statamic/eloquent-driver` require 8.3, and the Eloquent driver must be in
+  this repo's own test suite (Phase 3.1). Recorded in PROGRESS.md; reversible if 8.2 is needed.
 - **Laravel / Testbench:** whatever Statamic 6 requires — let Composer resolve it, but
   verify afterwards with `composer show statamic/cms`.
 
