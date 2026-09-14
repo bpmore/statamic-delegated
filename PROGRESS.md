@@ -1221,10 +1221,14 @@ doctor, the one config file); SECURITY.md's supported-versions paragraph no long
 "until 1.0". Final gate: Pint clean, `npm run build` reproduces the committed bundle, 398 tests
 pass, `composer validate --strict` passes. Tagged `v1.0.0` (annotated) on `build/phase-1`.
 
-**Owner actions, not done from here:** push the branch and the tag; merge `build/phase-1` into
-`main` (CI runs on `main` and pull requests — the matrix has never run on GitHub); create the
-GitHub release from the tag with the changelog entry; submit to Packagist / the Statamic
-Marketplace if selling; enable private vulnerability reporting (from Phase 1.2); decide the
-price (spec §9 says $249 only because §7 is honoured — it is). The site-wide Activity modal on
+**Release, 2026-09-14.** Private repository `bpmore/statamic-delegated` created (private until
+1.0 has been tested on a live site, then public and on the Statamic Marketplace — the owner's
+plan); `main`, `build/phase-1` and `v1.0.0` pushed by the owner; PR #1 opened for the merge so
+the matrix runs on GitHub for the first time; release `v1.0.0` created from the changelog entry.
+**Private vulnerability reporting cannot be enabled**: GitHub's endpoint answers 404 on a
+personal private repository. SECURITY.md and the README now name email as the channel while
+private, with the advisory link taking over when the repo goes public — flip the setting in
+Settings → Code security at that moment. Still the owner's: Packagist / Marketplace listing when
+public; the price (spec §9 says $249 only because §7 is honoured — it is). The site-wide Activity modal on
 the Territories screen has still not been clicked in a browser (same component as the
 per-territory one, which has); a super-user session in the host is all it needs.

@@ -10,14 +10,16 @@ they cannot, please report it privately. Do not open a public issue.
 
 ## How to report
 
-**Preferred:** GitHub private vulnerability reporting, at
-<https://github.com/bpmore/statamic-delegated/security/advisories/new>. It keeps
-the report, the discussion and the fix in one private place, and it can credit
-you in the published advisory.
+**Email** <(address removed)> with `[statamic-delegated security]` in
+the subject. If you would rather not send details over plain email, say so in
+the first message and we will arrange another channel.
 
-**Otherwise:** email <(address removed)> with `[statamic-delegated
-security]` in the subject. If you would rather not send details over plain
-email, say so in the first message and we will arrange another channel.
+**Once the repository is public,** GitHub private vulnerability reporting at
+<https://github.com/bpmore/statamic-delegated/security/advisories/new> becomes
+the preferred channel: it keeps the report, the discussion and the fix in one
+private place, and it can credit you in the published advisory. GitHub does
+not offer it on a private repository, which this one is while 1.0 is tested on
+a live site.
 
 A useful report says which Statamic version and which Delegated version, what
 the user's role and territory were, what they did, and what they saw that they
