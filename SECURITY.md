@@ -97,9 +97,8 @@ Vulnerabilities in Statamic itself should go to Statamic:
 
 ## Supported versions
 
-Until 1.0 ships, `main` is the only supported line and there are no releases to
-patch; a fix lands on `main`. From 1.0, the most recent minor release receives
-security fixes, and the previous minor for 90 days after the newer one ships.
+The most recent minor release receives security fixes, and the previous minor
+for 90 days after the newer one ships. 1.0.0 is the first release.
 
 The Statamic versions a given release is verified against are the ones its
 `composer.json` constraint allows. That range is widened only after the

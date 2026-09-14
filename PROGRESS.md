@@ -1,3 +1,5 @@
+ALL TASKS COMPLETE
+
 # PROGRESS — Delegated
 
 **Spec:** `delegated-build-spec.md` · **Package:** `bpmore/statamic-delegated` · price unresolved (spec §9)
@@ -53,7 +55,7 @@
 - [x] `DECISIONS.md` recording the last verified Statamic version — 6.32.0, with the re-verification steps and sixteen decisions
 - [x] README stating plainly: control panel only, not front-end, not the API surface you haven't covered — "What Delegated covers" and "What Delegated does not cover"
 - [x] Re-run the Phase 0 inventory against the shipping version — 6.32.0, from this repo, no surface changed
-- [ ] Tag 1.0
+- [x] Tag 1.0 — `v1.0.0` on 2026-09-14; pushing the tag and merging `build/phase-1` into `main` are the owner's
 
 ## Notes
 <!-- Record surprises, decisions and blockers here. If a task is wrong or blocked, write why and stop. -->
@@ -1209,3 +1211,20 @@ the tree"), and `Stache/Query/Builder` + `Query/IteratorBuilder` (timezone handl
 `whereDate`/`whereTime`, #15338). No change to `EntriesIndexQuery`, `EntryPolicy`, the tree or nav
 controllers, `Fieldtypes\Entries`, `ActionController`, or `CollectionStructure::validateTree`.
 The changelog is Antlers, assets, accessibility (several by the owner) and translations.
+
+### Phase 5.5 — 1.0.0 (2026-09-14)
+
+`CHANGELOG.md` gained the 1.0.0 entry (what a buyer gets, by section, and what is not covered);
+the README's pre-release notice became an Installation section (`composer require`,
+`php artisan migrate`, the `manage territories` permission, where the two screens appear, run the
+doctor, the one config file); SECURITY.md's supported-versions paragraph no longer speaks of
+"until 1.0". Final gate: Pint clean, `npm run build` reproduces the committed bundle, 398 tests
+pass, `composer validate --strict` passes. Tagged `v1.0.0` (annotated) on `build/phase-1`.
+
+**Owner actions, not done from here:** push the branch and the tag; merge `build/phase-1` into
+`main` (CI runs on `main` and pull requests — the matrix has never run on GitHub); create the
+GitHub release from the tag with the changelog entry; submit to Packagist / the Statamic
+Marketplace if selling; enable private vulnerability reporting (from Phase 1.2); decide the
+price (spec §9 says $249 only because §7 is honoured — it is). The site-wide Activity modal on
+the Territories screen has still not been clicked in a browser (same component as the
+per-territory one, which has); a super-user session in the host is all it needs.

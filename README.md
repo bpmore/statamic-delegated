@@ -18,9 +18,25 @@ site visitors, and it does not restrict the REST or GraphQL APIs, which have no
 user to restrict. The two sections below say exactly what is and is not
 covered; `LICENSE.md` says the same in plain words.
 
-> **Pre-release.** The package scaffold is in place; the product is being built
-> phase by phase and is not yet installable for use. This file will be rewritten
-> before 1.0.
+## Installation
+
+```
+composer require bpmore/statamic-delegated
+php artisan migrate
+```
+
+The migrations create `delegated_territories`, `delegated_assignments` and
+`delegated_audit` on the site's default database connection. Then, as a super
+user, give the people who will shape territories the **Delegated → Manage
+territories** permission and open **Users → Territories**. A territory admin
+needs no permission beyond `access cp` and whatever content permissions their
+role carries; **Users → My territories** appears for them once they administer
+a territory. Run `php please delegated:doctor` after setup and after any change
+to roles, and read `CHANGELOG.md` before each upgrade.
+
+Config (`php artisan vendor:publish --tag=delegated-config`): the resolution
+cache store and TTL. Nothing else is configurable; the invariants are not
+options.
 
 ## Security
 
