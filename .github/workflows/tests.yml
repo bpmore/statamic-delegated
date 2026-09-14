@@ -60,8 +60,13 @@ jobs:
           extensions: dom, curl, libxml, mbstring, zip, pdo_sqlite, sqlite3
           coverage: none
 
+      # `require` rewrites composer.json with the caret; put the pin back once
+      # vendor/ holds the newest core, or the pin-guard test (AddonTest) fails
+      # for the job's own doing rather than Statamic's.
       - name: Install the newest Statamic 6
-        run: composer require "statamic/cms:^6.31" --with-all-dependencies --prefer-dist --no-interaction --no-progress
+        run: |
+          composer require "statamic/cms:^6.31" --with-all-dependencies --prefer-dist --no-interaction --no-progress
+          git checkout -- composer.json composer.lock
 
       - name: Which minor this is
         run: composer show statamic/cms | grep -E '^versions'
