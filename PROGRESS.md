@@ -51,7 +51,7 @@
 ## Phase 5 — Hardening and ship
 - [x] CI matrix axis on `statamic/cms` minor versions, not just PHP — 6.31 and 6.32, plus an advisory newest-6.x leg
 - [x] `DECISIONS.md` recording the last verified Statamic version — 6.32.0, with the re-verification steps and sixteen decisions
-- [ ] README stating plainly: control panel only, not front-end, not the API surface you haven't covered
+- [x] README stating plainly: control panel only, not front-end, not the API surface you haven't covered — "What Delegated covers" and "What Delegated does not cover"
 - [ ] Re-run the Phase 0 inventory against the shipping version
 - [ ] Tag 1.0
 
@@ -1169,3 +1169,15 @@ click-through → matrix, pin, table row), and sixteen decisions in date order, 
 with the full reasoning left in these notes. Spec §11's "groups only in v1" recommendation was
 never explicitly declined in the notes; both subject types were built from §6's schema, so it is
 now recorded as decision 10 rather than left as an oversight. README links the file.
+
+### Phase 5.3 — README: what is and is not covered (2026-09-14)
+
+Two new sections before "Who Delegated does not restrict" (people). **Covers**: the enforced
+surfaces from the Phase 0.1 inventory as a user would name them, both drivers, denial-tested;
+the six invariants in one sentence. **Does not cover**, one bullet each: front end; REST and
+GraphQL; anything that is not an entry (assets, globals, forms, the taxonomy *terms* screens — a
+term territory scopes tagged entries, not the term); a third-party action's `view=form` read path
+(the open item from Phase 0.1 / 3.2.b, now stated as promised); the Eloquent dropped-from-tree
+URI staleness (as in SECURITY.md, with the doctor as the remedy); console and queue; unverified
+versions. The intro's "assigned to a user group" is now "user groups or individual users"
+(decision 10). The pre-release notice stays until 5.5.

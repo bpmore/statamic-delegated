@@ -8,14 +8,15 @@ permissions stop at the collection: a role can edit *pages*, or not, but there i
 no way to say "everything under `/cardiology` and nothing else", and no way to
 give cardiology an administrator who manages cardiology's people without being
 able to reach anyone else's. Delegated adds both — a *territory* (a branch of the
-site, a collection, or a taxonomy term) assigned to a user group, enforced
-everywhere the control panel could reach content outside it, and a *territory
-admin* who can add and remove members within that territory and nothing more.
+site, a collection, or a taxonomy term) assigned to user groups or individual
+users, enforced everywhere the control panel could reach content outside it,
+and a *territory admin* who can add and remove members within that territory
+and nothing more.
 
 Delegated restricts the **control panel only**. It does not hide content from
 site visitors, and it does not restrict the REST or GraphQL APIs, which have no
-user to restrict. See `LICENSE.md` for the plain-words version of what is and is
-not covered.
+user to restrict. The two sections below say exactly what is and is not
+covered; `LICENSE.md` says the same in plain words.
 
 > **Pre-release.** The package scaffold is in place; the product is being built
 > phase by phase and is not yet installable for use. This file will be rewritten
@@ -60,6 +61,64 @@ entries missing from their collection's stored tree, and trees naming entries
 that do not exist; and, per collection and site, how much content belongs to
 no territory at all. `--json` for scripts. Exit code 1 when there is a
 problem, so it can gate a deploy.
+
+## What Delegated covers
+
+Every control-panel surface through which a signed-in user could reach an
+**entry** outside their territory, on both the flat-file and the Eloquent
+driver, each with a denial test:
+
+- entry listings, the search box on a listing (with or without a search index),
+  and the command palette;
+- the edit screen, update, publish and unpublish, live preview, revisions, and
+  the two direct-URL redirects (`cp/edit/{id}`, `{entry}/{slug}`), which answer
+  404 outside the territory exactly as for an entry that does not exist;
+- bulk actions — Statamic's own are refused per entry, and duplicating an
+  entry requires the right to view the source;
+- creating an entry under a parent: the parent must be inside the territory,
+  and creating at the root needs a root territory;
+- the structure tree: read pruned to the territory, and a saved tree merged
+  back so nothing outside it can be moved, re-parented, or deleted;
+- the navigation tree editor, for branches linked to entries outside the
+  territory;
+- the relationship picker (the `entries` fieldtype), both its listing and its
+  validation of submitted ids;
+- the users listing and users screens, for anyone in a territory: the people
+  they administer and nobody else (invariant 6).
+
+A territory admin's own powers are held to six invariants, each refused with a
+named reason and recorded in the audit log: they cannot grant a role they do
+not hold, act on a territory they do not administer, touch a super user,
+manage roles, widen their own territory, or see users outside it.
+
+## What Delegated does not cover
+
+Stated plainly, because a security product that is vague about its edges is
+worse than none.
+
+- **The front end.** Site visitors see whatever the site publishes. Delegated
+  does not hide content from them and has no opinion about it.
+- **The REST API and GraphQL.** Both authenticate with a shared token, not a
+  user, so there is no one to confine. If the site has either switched on,
+  content in it is reachable regardless of territory.
+- **Anything that is not an entry.** Territories scope entries. Assets,
+  globals, forms and their submissions, and the taxonomy *terms* screens are
+  governed by Statamic's own permissions only. A taxonomy-term territory
+  scopes the entries tagged with the term, not the term itself.
+- **A third-party action's `view=form` read path.** Statamic's action runner
+  returns an item's full values after only the action's own `authorize()`
+  check. Delegated closes this for Statamic's built-in actions, but an addon
+  action with a permissive `authorize()` becomes a way to read an entry
+  outside the territory. Review the actions a site installs.
+- **An entry removed from its tree without being deleted, on the Eloquent
+  driver.** It keeps its last URI until saved again (Statamic's behaviour), so
+  the department that owned it still sees it; on the file driver it has no URI
+  and belongs to nobody. `delegated:doctor` lists such entries. Neither reading
+  exposes the entry to another department.
+- **Console commands and queue jobs.** No signed-in user, nothing to confine.
+- **Statamic versions outside the pinned range.** The addon reaches into
+  control-panel internals that are not a published interface; on an unverified
+  minor it may restrict less than before without saying so. See Requirements.
 
 ## Who Delegated does not restrict
 
