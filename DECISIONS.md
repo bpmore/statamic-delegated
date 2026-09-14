@@ -14,7 +14,7 @@ minor is verified before the range in `composer.json` is widened to include it.
 | statamic/cms | Verified | PHP | Suite | Asset build | Phase 0 inventory |
 |---|---|---|---|---|---|
 | 6.31.0 | 2026-09-11 → 12 | 8.3, 8.4 | built and passed against it throughout | yes | run against it (`recon/`, PROGRESS.md Phase 0.1) |
-| 6.32.0 | 2026-09-12 | 8.4 locally; CI 8.3, 8.4 | 397 pass | reproduces the committed bundle byte for byte | **not re-run** (Phase 5.4) |
+| 6.32.0 | 2026-09-12, inventory 2026-09-14 | 8.4 locally; CI 8.3, 8.4 | 398 pass | reproduces the committed bundle byte for byte | re-run from this repo: every surface answers as on 6.31.0 (PROGRESS.md Phase 5.4) |
 
 **Last verified: 6.32.0.** Pin: `>=6.31.0 <6.33.0`.
 
@@ -29,9 +29,14 @@ when a new minor appears, in this order:
    enforcement, never the test's expectation, unless the surface is gone.
 2. `npm run build` and `git diff --exit-code -- resources/dist`. A changed
    bundle means the Vite plugin or the UI kit changed; check the pages by hand.
-3. Re-run the Phase 0 inventory (`recon/DelegatedInventoryProbeTest.php`) from
-   the host on the new minor and compare with the table in `PROGRESS.md`
-   Phase 0.1. A new ❌ row is a new enforcement point, and a new denial test.
+3. Re-run the Phase 0 inventory from this repo — it boots core without
+   Delegated against the vendored minor:
+   `vendor/bin/phpunit -c phpunit.xml recon/DelegatedInventoryProbeTest.php --no-progress 2>&1 | sed -n '/PROBE RESULTS/,/=======/p'`
+   — and compare line by line with the previous run in `PROGRESS.md`. A
+   surface that answers differently is a new enforcement point, and a new
+   denial test. Also `diff -rq` the two minors' `src/` (Composer's cache has
+   both archives) for anything under `Http/Controllers/CP`, `Hooks`, `Policies`,
+   `Fieldtypes`, `Structures`, `Actions`, `Stache/Query`, `Query`.
 4. Click through the three screens in a host on that minor: Territories,
    My territories, and both Activity modals.
 5. Add the minor to `statamic:` in `.github/workflows/tests.yml`, widen the

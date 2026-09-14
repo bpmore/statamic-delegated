@@ -3,9 +3,9 @@
 /**
  * Reconnaissance probe for the Delegated enforcement-surface inventory (PROGRESS.md, Notes).
  *
- * Not addon code and not part of the addon's test suite. It runs against a host site's
- * booted Statamic with every Stache store and the user/role/group paths redirected into a
- * `fixtures/` directory next to this file, so nothing in the host site is touched. It makes
+ * Not addon code and not part of the addon's test suite. It runs against a booted Statamic
+ * (core only, through Testbench) with every Stache store and the user/role/group paths
+ * redirected into a `fixtures/` directory next to this file. It makes
  * no assertions — it prints a result line per surface to STDERR; the inventory in
  * PROGRESS.md is the interpretation. Re-run it on every Statamic minor (Phase 5) and diff.
  *
@@ -18,16 +18,20 @@
  *             denies any ability whose subject is an entry under /oncology.
  *             Simulates a territory-aware policy layer: what still leaks?
  *
- * Run from the host site (the env vars enable routes that are registered at boot):
- *   cd /path/to/host-site && STATAMIC_PRO_ENABLED=true STATAMIC_API_ENABLED=true \
- *   STATAMIC_GRAPHQL_ENABLED=true STATAMIC_REVISIONS_ENABLED=true \
- *   vendor/bin/phpunit -c phpunit.xml /path/to/this/file --no-progress 2>&1 | sed -n '/PROBE RESULTS/,/=======/p'
+ * Run from this repository, against the vendored statamic/cms and without Delegated's
+ * provider (see ProbeTestCase):
+ *   vendor/bin/phpunit -c phpunit.xml recon/DelegatedInventoryProbeTest.php --no-progress 2>&1 \
+ *     | sed -n '/PROBE RESULTS/,/=======/p'
  *
- * Requires the host's `page` blueprint (or the fallback) — the probe records whether it has an
- * `author` field, because that switches EntryPolicy into its "other authors" mode.
+ * Findings against 6.32.0 (2026-09-14) are recorded in PROGRESS.md Phase 5.4, diffed against 6.31.0.
+ *
+ * The probe records whether the `page` blueprint (or the fallback) has an `author` field,
+ * because that switches EntryPolicy into its "other authors" mode.
  */
 
 namespace Probe;
+
+require_once __DIR__.'/ProbeTestCase.php';
 
 use Illuminate\Support\Facades\Gate;
 use Statamic\Contracts\Auth\RoleRepository;
@@ -40,9 +44,8 @@ use Statamic\Facades\Role;
 use Statamic\Facades\Search;
 use Statamic\Facades\Stache;
 use Statamic\Facades\User;
-use Tests\TestCase;
 
-class DelegatedInventoryProbeTest extends TestCase
+class DelegatedInventoryProbeTest extends ProbeTestCase
 {
     protected string $fx;
 

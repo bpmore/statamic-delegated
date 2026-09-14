@@ -176,5 +176,13 @@ flat-file Stache, and under `tests/Feature/Eloquent` with entries in the databas
 `statamic/eloquent-driver`. A scenario that passes on one driver and not the other is a bug.
 
 `recon/` holds the reconnaissance probes that produced the enforcement-surface
-inventory in `PROGRESS.md`. They run from a host site, not from this repository,
-and are re-run against every Statamic minor before the constraint is widened.
+inventory in `PROGRESS.md`. The inventory probe boots Statamic core alone —
+without Delegated — against the vendored `statamic/cms`, and is re-run on every
+minor before the constraint is widened:
+
+```
+vendor/bin/phpunit -c phpunit.xml recon/DelegatedInventoryProbeTest.php --no-progress 2>&1 \
+  | sed -n '/PROBE RESULTS/,/=======/p'
+```
+
+The query-scoping spike still runs from a host site (`SPIKE_DRIVER=file|eloquent`).

@@ -52,7 +52,7 @@
 - [x] CI matrix axis on `statamic/cms` minor versions, not just PHP — 6.31 and 6.32, plus an advisory newest-6.x leg
 - [x] `DECISIONS.md` recording the last verified Statamic version — 6.32.0, with the re-verification steps and sixteen decisions
 - [x] README stating plainly: control panel only, not front-end, not the API surface you haven't covered — "What Delegated covers" and "What Delegated does not cover"
-- [ ] Re-run the Phase 0 inventory against the shipping version
+- [x] Re-run the Phase 0 inventory against the shipping version — 6.32.0, from this repo, no surface changed
 - [ ] Tag 1.0
 
 ## Notes
@@ -1181,3 +1181,31 @@ term territory scopes tagged entries, not the term); a third-party action's `vie
 URI staleness (as in SECURITY.md, with the doctor as the remedy); console and queue; unverified
 versions. The intro's "assigned to a user group" is now "user groups or individual users"
 (decision 10). The pre-release notice stays until 5.5.
+
+### Phase 5.4 — Phase 0 inventory re-run on 6.32.0 (2026-09-14)
+
+**The probe now runs from this repo.** It extended the host's `Tests\TestCase`, which tied the
+inventory to whatever the host runs (6.31.0, shared by eight addons — not something to bump
+from here). `recon/ProbeTestCase.php` extends `AddonTestCase`, drops Delegated's provider from
+`getPackageProviders()` so core is measured alone, and sets the boot-time config the host needed
+env vars for (Pro, API, GraphQL, revisions, no 2FA / elevated sessions). `vendor/bin/phpunit -c
+phpunit.xml recon/DelegatedInventoryProbeTest.php` — README, DECISIONS.md step 3 and the probe's
+own header say so. The spike (`QueryScopingSpikeTest`) still runs from a host.
+
+**Result on 6.32.0: every line answers as on 6.31.0.** Listing 200 with all six rows for the
+member; edit 403/200; both direct-URL redirects 302 for anyone; update/publish 403; bulk list
+offers `duplicate_entry` on oncology and running it makes a readable orphan copy (uri NULL, not in
+tree, member GET edit 200) in both `form` and `list` context; tree GET 200 for `access cp` only;
+tree PATCH moves oncology under cardiology and deletes chemo; flat reorder 500 "Root page cannot
+have children"; palette search post-filtered, palette index has no entry links; REST/GraphQL
+userless and published-only; preview 403/200 with popout shell 200; revisions 403 ×3 / 200; nav
+tree 200 for anyone, nav PATCH adds a branch to the other territory's draft, nav page edit 403;
+picker lists all six, picker data marks `onc` invalid; create with `_parent=onc` → 200
+`/oncology/sneaky`. Nothing new to enforce, nothing that stopped needing it.
+
+**Source diff 6.31.0 → 6.32.0** (`diff -rq` of `src/`, 41 files): the only enforcement-adjacent
+files are `ReorderEntriesController` (`page`/`perPage` gain `min:1` — #15429's "page: 0 corrupting
+the tree"), and `Stache/Query/Builder` + `Query/IteratorBuilder` (timezone handling in
+`whereDate`/`whereTime`, #15338). No change to `EntriesIndexQuery`, `EntryPolicy`, the tree or nav
+controllers, `Fieldtypes\Entries`, `ActionController`, or `CollectionStructure::validateTree`.
+The changelog is Antlers, assets, accessibility (several by the owner) and translations.
