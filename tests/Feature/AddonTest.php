@@ -38,13 +38,17 @@ it('pins statamic/cms to a tested range rather than an open-ended one', function
 
 it('ships a security policy with a contact and a response time', function () {
     // Spec §1: a security contact and a disclosure policy exist before there
-    // is a listing to buy. This only proves the file says something in each
-    // slot; whether the times are honoured is not something a test can check.
+    // is a listing to buy. The contact is GitHub private vulnerability
+    // reporting with a fallback that does not name an address (the owner's
+    // decision, 2026-09-14): no email address may appear. This only proves
+    // the file says something in each slot; whether the times are honoured is
+    // not something a test can check.
     $policy = (string) file_get_contents(repoPath('SECURITY.md'));
 
     expect($policy)
         ->toContain('security/advisories/new')
-        ->and(preg_match('/[\w.+-]+@[\w-]+\.[\w.]+/', $policy))->toBe(1)
+        ->toContain('GitHub profile')
+        ->and(preg_match('/[\w.+-]+@[\w-]+\.[\w.]+/', $policy))->toBe(0)
         ->and(preg_match('/\*\*\d+ (business|calendar) days\*\*/', $policy))->toBe(1);
 
     // The README is where a buyer looks first, so it carries the contact too.
