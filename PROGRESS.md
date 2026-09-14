@@ -44,8 +44,8 @@
 
 ## Phase 4 — Territory management
 - [x] CP screens: territories, assignments, membership — site-administration screen; clicked through in the host 2026-09-12
-- [x] Territory admin self-service, constrained by the Phase 2 invariants — backend and page built and tested; browser pass pending (session expired)
-- [x] Audit log, scoped per territory — written on every write and refusal, read site-wide and per territory with outside actors unnamed; browser pass pending (no CP session)
+- [x] Territory admin self-service, constrained by the Phase 2 invariants — clicked through in the host as a territory admin 2026-09-14
+- [x] Audit log, scoped per territory — written on every write and refusal, read site-wide and per territory with outside actors unnamed; per-territory modal clicked through 2026-09-14, site-wide modal still unchecked in a browser
 - [x] `delegated:doctor` — orphaned territories, entries with no owner, and the drift and misconfiguration recorded along the way
 
 ## Phase 5 — Hardening and ship
@@ -1131,3 +1131,31 @@ record it in `DECISIONS.md` (5.2). It cannot fail the branch.
 
 Not done: no run has happened on GitHub from here (no push in this session); the workflow was
 checked for shape only. **Owner action:** push and watch the first matrix run.
+
+### 2026-09-14 — Browser pass for 4.2 and 4.3, as a territory admin
+
+The user signed in to the host as `dev-head@example.com` (admin of territory #2, seeded on
+2026-09-12 with a real `/cardiology` branch). Clicked through My territories: Activity (seed
+rows: the grant by `dev-super` shown as "someone outside your territory", Test — a member —
+named), add `dev-staff@example.com` by email with the Cardiology editor role (201, listed),
+Roles (untick → "No roles"), Rename ("Cardiology Department"), add `dev-super@example.com`
+(403 `super_user`, modal stays open, nothing written), Remove Dev Staff, Activity again (revoked
+row names Dev Staff although they have left; three `refused.add_member` rows in red with the
+invariant). Two findings:
+
+- **Bug, fixed:** the role checkboxes in the add-member and roles modals rendered with no
+  label. `Checkbox`'s `solo` prop *hides* the label ("use when the label is provided elsewhere")
+  — the 4.2 note "Checkbox needs `solo`" was wrong. Removed; labels show. Rebuilt and published.
+- **Tightened:** a refusal's message names its target by id ("Cannot edit, demote or delete
+  super user <uuid>"). For a target the viewer may not see, the label already said "someone
+  outside your territory", so the message now goes with it (`after` keeps only the invariant);
+  the site-wide log keeps the message. Test added. 398 tests.
+
+**Not a bug:** no toast is ever visible in the automation window. The toasts are in the DOM
+with the right text (`toasted-container`, vue-toasted, opacity animated by anime.js) but the
+window is `document.visibilityState === 'hidden'`, so `requestAnimationFrame` never fires and
+opacity stays 0 — Statamic's own `$toast.success` behaves the same there. In a visible window
+they show. Not something to work around in Delegated.
+
+**Still unchecked in a browser:** the site-wide Activity modal on the Territories screen (needs
+`manage territories` or super; no such session was available). Same component, different URL.

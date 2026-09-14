@@ -264,7 +264,6 @@ async function saveRoles() {
             <Field v-if="newMember.subject_type === 'user' && grantableRoles.length" label="Roles" :errors="addErrors.roles" instructions="Only roles you hold yourself can be given.">
                 <div class="space-y-2">
                     <Checkbox
-                        solo
                         v-for="role in grantableRoles"
                         :key="role.handle"
                         :label="role.title"
@@ -287,7 +286,6 @@ async function saveRoles() {
         <div v-if="editingRoles" class="space-y-4">
             <div class="space-y-2">
                 <Checkbox
-                    solo
                     v-for="role in grantableRoles"
                     :key="role.handle"
                     :label="role.title"

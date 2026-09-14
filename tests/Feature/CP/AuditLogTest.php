@@ -247,6 +247,23 @@ it('never shows a territory admin the name of an actor from outside their territ
         ->and(siteAudit('manager')->json('entries.2.actor.label'))->toBe('you');
 });
 
+it('keeps a refused outsider\'s id out of the message as well as the label', function () {
+    // Cardiology's head reaches for a super user: refused, and the row is
+    // cardiology's. The super user is nobody the head may see, so neither
+    // the label nor the invariant's message may carry their id.
+    expect(fn () => admin()->addMember(Site::actor('head'), $this->cardiology, 'user:root', Level::Member))->toThrow(EscalationDenied::class);
+
+    $entry = territoryAudit('head', $this->cardiology)->json('entries.0');
+
+    expect($entry['action'])->toBe('refused.add_member')
+        ->and($entry['target'])->toBe(['label' => 'someone outside your territory', 'id' => null])
+        ->and($entry['after'])->toBe(['invariant' => EscalationDenied::SUPER_USER])
+        ->and(json_encode($entry))->not->toContain('root');
+
+    // The site-wide log keeps the message.
+    expect(siteAudit('manager')->json('entries.0.after.message'))->toContain('root');
+});
+
 it('names the target of a refusal no more readily than an actor', function () {
     // Oncology's head asks for cardiology's staff member: refused, and the
     // row belongs to cardiology. Cardiology's admin may see who was refused

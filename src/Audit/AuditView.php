@@ -59,21 +59,33 @@ final class AuditView
     {
         $map = $this->resolver->map();
 
-        return array_map(fn (AuditEntry $e): array => [
-            'id' => $e->id,
-            'at' => $e->createdAt->format(DATE_ATOM),
-            'action' => $e->action,
-            'actor' => $this->person($e->actorId, $viewer, $visible),
-            'target' => match ($e->targetType) {
-                'user' => $this->person($e->targetId, $viewer, str_starts_with($e->action, 'refused.') ? $visible : null),
+        return array_map(function (AuditEntry $e) use ($viewer, $visible, $map): array {
+            $refused = str_starts_with($e->action, 'refused.');
+
+            $target = match ($e->targetType) {
+                'user' => $this->person($e->targetId, $viewer, $refused ? $visible : null),
                 'group' => ['label' => UserGroup::find((string) $e->targetId)?->title() ?? (string) $e->targetId, 'id' => $e->targetId],
                 'territory' => ['label' => $map->find((int) $e->targetId)?->name ?? ($e->before['name'] ?? $e->after['name'] ?? "territory {$e->targetId}"), 'id' => $e->targetId],
                 default => ['label' => (string) $e->targetId, 'id' => $e->targetId],
-            },
-            'territory' => $e->territoryId === null ? null : ['id' => $e->territoryId, 'name' => $map->find($e->territoryId)?->name ?? ($e->before['name'] ?? "territory {$e->territoryId}")],
-            'before' => $e->before,
-            'after' => $e->after,
-        ], $entries);
+            };
+
+            // A refusal's message names its target by id. When the target is
+            // someone the viewer may not see, the id goes with the name.
+            $after = $refused && $e->targetId !== null && $target['id'] === null
+                ? array_diff_key($e->after ?? [], ['message' => true])
+                : $e->after;
+
+            return [
+                'id' => $e->id,
+                'at' => $e->createdAt->format(DATE_ATOM),
+                'action' => $e->action,
+                'actor' => $this->person($e->actorId, $viewer, $visible),
+                'target' => $target,
+                'territory' => $e->territoryId === null ? null : ['id' => $e->territoryId, 'name' => $map->find($e->territoryId)?->name ?? ($e->before['name'] ?? "territory {$e->territoryId}")],
+                'before' => $e->before,
+                'after' => $after,
+            ];
+        }, $entries);
     }
 
     /**
