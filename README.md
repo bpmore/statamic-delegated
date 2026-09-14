@@ -96,7 +96,8 @@ in `PROGRESS.md`'s inventory.
   6.32. The constraint is deliberately not open-ended: the addon reaches into
   control-panel internals that are not a published interface, so CI runs the
   suite against every minor in the range, and the range is widened only after
-  a new minor passes.
+  a new minor passes. [`DECISIONS.md`](DECISIONS.md) records which minor was
+  last verified and the steps for the next one.
 
 ## Development
 

@@ -50,7 +50,7 @@
 
 ## Phase 5 — Hardening and ship
 - [x] CI matrix axis on `statamic/cms` minor versions, not just PHP — 6.31 and 6.32, plus an advisory newest-6.x leg
-- [ ] `DECISIONS.md` recording the last verified Statamic version
+- [x] `DECISIONS.md` recording the last verified Statamic version — 6.32.0, with the re-verification steps and sixteen decisions
 - [ ] README stating plainly: control panel only, not front-end, not the API surface you haven't covered
 - [ ] Re-run the Phase 0 inventory against the shipping version
 - [ ] Tag 1.0
@@ -1159,3 +1159,13 @@ they show. Not something to work around in Delegated.
 
 **Still unchecked in a browser:** the site-wide Activity modal on the Territories screen (needs
 `manage territories` or super; no such session was available). Same component, different URL.
+
+### Phase 5.2 — `DECISIONS.md` (2026-09-14)
+
+Three parts: the verified-versions table (6.31.0 built against throughout with the inventory run
+on it; 6.32.0 suite and asset build on 2026-09-12, inventory **not** re-run — that is 5.4), the
+re-verification procedure for a new minor (require → suite → asset diff → Phase 0 inventory →
+click-through → matrix, pin, table row), and sixteen decisions in date order, each a paragraph
+with the full reasoning left in these notes. Spec §11's "groups only in v1" recommendation was
+never explicitly declined in the notes; both subject types were built from §6's schema, so it is
+now recorded as decision 10 rather than left as an oversight. README links the file.
