@@ -41,14 +41,12 @@ options.
 ## Security
 
 A bug that lets a control-panel user reach content outside their territory is a
-vulnerability, not a defect. Report it privately — by email to
-<(address removed)>, or through [GitHub private vulnerability
-reporting](https://github.com/bpmore/statamic-delegated/security/advisories/new)
-once the repository is public — and not in a public issue. You will
-get an acknowledgement within 3 business days and a severity within 7 days of
-that; a confirmed cross-territory exposure is fixed or mitigated within 30 days.
-[`SECURITY.md`](SECURITY.md) has the full policy, including what is in and out
-of scope.
+vulnerability, not a defect. Report it privately, through [GitHub private
+vulnerability reporting](https://github.com/bpmore/statamic-delegated/security/advisories/new),
+and not in a public issue. You will get an acknowledgement within 3 business
+days and a severity within 7 days of that; a confirmed cross-territory exposure
+is fixed or mitigated within 30 days. [`SECURITY.md`](SECURITY.md) has the full
+policy, including what is in and out of scope.
 
 ## The audit log
 

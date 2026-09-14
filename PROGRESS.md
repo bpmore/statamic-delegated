@@ -1015,7 +1015,7 @@ rename allowed, scope untouched, other territory refused; super sees all. 375 te
 **Browser pass not completed:** the CP session had expired in the new window and there is no
 password to hand. A territory (`Cardiology`, `/cardiology`, id 2) with the `Test` user as admin is
 seeded in the host for the check: open `http://statamic-dev.test/cp/delegated/my-territories`
-as Test and try rename → add member by email (`(address removed)`) → roles → remove.
+as Test and try rename → add member by email (any existing user's address) → roles → remove.
 Delete the territory from the Territories screen afterwards.
 
 ### Phase 4.3 — Audit log, scoped per territory (2026-09-12)
@@ -1225,10 +1225,11 @@ pass, `composer validate --strict` passes. Tagged `v1.0.0` (annotated) on `build
 1.0 has been tested on a live site, then public and on the Statamic Marketplace — the owner's
 plan); `main`, `build/phase-1` and `v1.0.0` pushed by the owner; PR #1 opened for the merge so
 the matrix runs on GitHub for the first time; release `v1.0.0` created from the changelog entry.
-**Private vulnerability reporting cannot be enabled**: GitHub's endpoint answers 404 on a
-personal private repository. SECURITY.md and the README now name email as the channel while
-private, with the advisory link taking over when the repo goes public — flip the setting in
-Settings → Code security at that moment. Still the owner's: Packagist / Marketplace listing when
+**Private vulnerability reporting cannot be enabled yet**: GitHub's endpoint answers 404 on a
+personal private repository. SECURITY.md and the README are worded as if the repo were public
+(the advisory link is the only channel named; no email address anywhere in the repo, by the
+owner's request) — so flip the setting in Settings → Code security the moment it goes public,
+or the link is a dead end. Still the owner's: Packagist / Marketplace listing when
 public; the price (spec §9 says $249 only because §7 is honoured — it is). The site-wide Activity modal on
 the Territories screen has still not been clicked in a browser (same component as the
 per-territory one, which has); a super-user session in the host is all it needs.
