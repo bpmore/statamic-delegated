@@ -1,0 +1,13 @@
+/vendor/
+/node_modules/
+/.phpunit.cache/
+/.pest/
+/.claude/settings.local.json
+.DS_Store
+
+# Written by run-build.sh
+/build-log.jsonl
+
+# Created (and normally removed) by the recon probes
+/recon/fixtures/
+/.phpunit.result.cache

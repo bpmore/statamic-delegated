@@ -1,0 +1,123 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Spec §7: a matrix axis on statamic/cms minor versions, not just PHP. The
+# `statamic` values are the minors the suite has been run against — the same
+# range composer.json pins. Widening the pin means adding a value here, and
+# DECISIONS.md records which minor was verified when.
+jobs:
+  tests:
+    name: PHP ${{ matrix.php }} · Statamic ${{ matrix.statamic }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4']
+        statamic: ['6.31', '6.32']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pdo_sqlite, sqlite3
+          coverage: none
+
+      # `require`, not `install`: the committed lock file pins one minor; each
+      # leg resolves its own within the range composer.json allows. The
+      # constraint is narrowed to the leg's minor, never widened past the pin.
+      - name: Install dependencies at Statamic ${{ matrix.statamic }}
+        run: composer require "statamic/cms:~${{ matrix.statamic }}.0" --with-all-dependencies --prefer-dist --no-interaction --no-progress
+
+      # Building against anything but the leg's minor would be building the
+      # wrong thing — and anything but 6.x is a bug in the constraints.
+      - name: Confirm Statamic ${{ matrix.statamic }} resolved
+        run: composer show statamic/cms | grep -E '^versions\s*:\s*\* v${{ matrix.statamic }}\.'
+
+      - name: Tests
+        run: vendor/bin/pest --ci
+
+  # The re-verification signal (spec §7.3): the newest 6.x Packagist has,
+  # beyond the pin. A failure here is not a failure of the branch — it is the
+  # cue to run the Phase 0 inventory against the new minor, fix what moved,
+  # and add the minor to the matrix and the pin.
+  next-minor:
+    name: Newest Statamic 6.x (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pdo_sqlite, sqlite3
+          coverage: none
+
+      # `require` rewrites composer.json with the caret; put the pin back once
+      # vendor/ holds the newest core, or the pin-guard test (AddonTest) fails
+      # for the job's own doing rather than Statamic's.
+      - name: Install the newest Statamic 6
+        run: |
+          composer require "statamic/cms:^6.31" --with-all-dependencies --prefer-dist --no-interaction --no-progress
+          git checkout -- composer.json composer.lock
+
+      - name: Which minor this is
+        run: composer show statamic/cms | grep -E '^versions'
+
+      - name: Tests
+        run: vendor/bin/pest --ci
+
+  lint:
+    name: Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Pint
+        run: vendor/bin/pint --test
+
+  assets:
+    name: Control panel assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The Vite plugin comes from vendor/statamic/cms, so Composer runs first.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      # The build is committed, because an addon ships its assets rather than
+      # asking every site to run a build. A change to resources/js that was
+      # not rebuilt and committed would ship the old bundle.
+      - name: Committed build is current
+        run: git diff --exit-code -- resources/dist

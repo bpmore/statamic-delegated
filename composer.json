@@ -1,0 +1,71 @@
+{
+    "name": "bpmore/statamic-delegated",
+    "description": "Departmental content ownership and delegated administration for the Statamic 6 control panel.",
+    "type": "statamic-addon",
+    "keywords": [
+        "statamic",
+        "permissions",
+        "delegated-administration",
+        "content-ownership",
+        "departments"
+    ],
+    "homepage": "https://github.com/bpmore/statamic-delegated",
+    "license": "proprietary",
+    "support": {
+        "issues": "https://github.com/bpmore/statamic-delegated/issues",
+        "source": "https://github.com/bpmore/statamic-delegated",
+        "docs": "https://github.com/bpmore/statamic-delegated/blob/main/README.md",
+        "security": "https://github.com/bpmore/statamic-delegated/blob/main/SECURITY.md"
+    },
+    "authors": [
+        {
+            "name": "Brent Passmore"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "statamic/cms": ">=6.31.0 <6.33.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.18",
+        "orchestra/testbench": "^10.8 || ^11.0",
+        "pestphp/pest": "^3.0",
+        "statamic/eloquent-driver": "^5.11"
+    },
+    "autoload": {
+        "psr-4": {
+            "Bpmore\\StatamicDelegated\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Bpmore\\StatamicDelegated\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "statamic": {
+            "name": "Delegated",
+            "slug": "delegated",
+            "description": "Give each department ownership of its own branch of the site, and its own administrator, without letting either reach anyone else's."
+        },
+        "laravel": {
+            "providers": [
+                "Bpmore\\StatamicDelegated\\ServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "pixelfear/composer-dist-plugin": true,
+            "php-http/discovery": true
+        },
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "scripts": {
+        "test": "pest",
+        "lint": "pint"
+    }
+}
