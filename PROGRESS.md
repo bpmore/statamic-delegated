@@ -1212,6 +1212,32 @@ the tree"), and `Stache/Query/Builder` + `Query/IteratorBuilder` (timezone handl
 controllers, `Fieldtypes\Entries`, `ActionController`, or `CollectionStructure::validateTree`.
 The changelog is Antlers, assets, accessibility (several by the owner) and translations.
 
+### Statamic 6.33.0 (2026-09-19)
+
+Re-verification per DECISIONS.md, steps 1 to 3 and 5; step 4 (the click-through) is the
+owner's, in greenhouse, once the pin lands. Trigger: greenhouse could not upgrade past the
+`<6.33.0` pin.
+
+1. `composer require "statamic/cms:~6.33.0" --with-all-dependencies` moved `statamic/cms`
+   6.32.0 → 6.33.0 plus Laravel 13.31 → 13.32, Symfony 8.1.6 → 8.1.7, Carbon, brick/math
+   and a few small libraries. `vendor/bin/pest --ci`: **398 pass, 1696 assertions**, nothing
+   to fix.
+2. `npm run build` reproduces the committed bundle byte for byte
+   (`git diff --exit-code -- resources/dist` clean).
+3. Inventory probe run on 6.32.0 first (the committed lock) and then on 6.33.0, captured
+   both, diffed with UUIDs masked: **all 61 lines identical.** Source diff 6.32.0 → 6.33.0
+   (`diff -rq` of `src/`, 32 files): in the listed directories only
+   `CP/Collections/EntriesController` (`localizedFields` gains `date` when localizable,
+   #15453), `CollectionsController` (revisions flag left alone when the field is hidden,
+   #15431), `ExtractsFromEntryFields` / `ExtractsFromTermFields` (default values after save,
+   #15427), `ReplicatorSetController` (nested-fields check, #14068) and a new
+   `Fieldtypes/Info.php`. Nothing in `Hooks`, `Policies`, `Structures`, `Actions`,
+   `Stache/Query` or `Query`. Outside the list, `Entries/Entry.php` (localized date on
+   origins, #15453) and `DataReferenceUpdater` (fields cloned with the item as parent,
+   #15443) — neither touches visibility or authorization. Nothing new to enforce.
+5. 6.33 added to the CI matrix, pin widened to `>=6.31.0 <6.34.0`, table row added, README
+   requirement line and CLAUDE.md updated; the lock file now resolves 6.33.0.
+
 ### Phase 5.5 — 1.0.0 (2026-09-14)
 
 `CHANGELOG.md` gained the 1.0.0 entry (what a buyer gets, by section, and what is not covered);

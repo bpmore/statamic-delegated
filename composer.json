@@ -24,7 +24,7 @@
     ],
     "require": {
         "php": "^8.3",
-        "statamic/cms": ">=6.31.0 <6.33.0"
+        "statamic/cms": ">=6.31.0 <6.34.0"
     },
     "require-dev": {
         "laravel/pint": "^1.18",

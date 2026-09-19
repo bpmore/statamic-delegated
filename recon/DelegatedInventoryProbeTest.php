@@ -23,7 +23,8 @@
  *   vendor/bin/phpunit -c phpunit.xml recon/DelegatedInventoryProbeTest.php --no-progress 2>&1 \
  *     | sed -n '/PROBE RESULTS/,/=======/p'
  *
- * Findings against 6.32.0 (2026-09-14) are recorded in PROGRESS.md Phase 5.4, diffed against 6.31.0.
+ * Findings against 6.32.0 (2026-09-14) are recorded in PROGRESS.md Phase 5.4, diffed against 6.31.0;
+ * against 6.33.0 (2026-09-19) under "Statamic 6.33.0", diffed against 6.32.0.
  *
  * The probe records whether the `page` blueprint (or the fallback) has an `author` field,
  * because that switches EntryPolicy into its "other authors" mode.

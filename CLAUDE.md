@@ -24,8 +24,8 @@ when run with `SPIKE_DRIVER=eloquent`. Do not publish the driver's config into t
 
 ## Target platform — do not resolve to anything older
 
-- **Statamic:** 6 only, pinned to the verified minors in `composer.json` (`>=6.31.0 <6.33.0`
-  as of 2026-09-12; the lock file resolves the newest of them). If a dependency resolves
+- **Statamic:** 6 only, pinned to the verified minors in `composer.json` (`>=6.31.0 <6.34.0`
+  as of 2026-09-19; the lock file resolves the newest of them). If a dependency resolves
   to `statamic/cms` 5.x, that is a bug: fix the constraint and re-resolve before doing any
   further work. Statamic 6 has a different control panel, Vue 3 + Inertia, and different
   extension points; anything built against 5.x will have to be rewritten. CI runs the suite
