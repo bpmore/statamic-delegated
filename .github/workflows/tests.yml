@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Statamic ships a minor most weeks and nothing here pushes that often, so
+  # the advisory next-minor job would otherwise only notice a new minor when
+  # some unrelated commit landed. Mondays, and by hand from the Actions tab.
+  schedule:
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
 
 # Spec §7: a matrix axis on statamic/cms minor versions, not just PHP. The
 # `statamic` values are the minors the suite has been run against — the same
