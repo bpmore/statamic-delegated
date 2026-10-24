@@ -1259,3 +1259,26 @@ or the link is a dead end. Still the owner's: Packagist / Marketplace listing wh
 public; the price (spec §9 says $249 only because §7 is honoured — it is). The site-wide Activity modal on
 the Territories screen has still not been clicked in a browser (same component as the
 per-territory one, which has); a super-user session in the host is all it needs.
+
+### 1.0.1 — marketplace preparation (2026-10-23)
+
+Reviewed against the marketplace submission guidelines (revised 2026-09-14). Found: repo private
+and not on Packagist, so `composer require` fails for a buyer; `v1.0.0` pins `<6.33.0` while
+`main` claims 6.33; no screenshots; dev files in the Composer download; the add-by-email reach
+(Phase 2.7's accepted existence oracle) undocumented in the README.
+
+Done on `release/1.0.1`: `.gitattributes` export-ignore (tests, recon, JS source, notes, build
+tooling); README screenshots (`docs/screenshots/`, taken on a fresh Statamic 6.33.0 skeleton with
+seeded departments) and a paragraph on whom an admin can add; CHANGELOG 1.0.1. The trimmed
+`git archive` was installed as a copy (not a symlink) into the fresh site: migrations run, CP
+asset served from the manifest, My territories renders, doctor clean. 398 tests pass.
+
+**Seen in the browser, not fixed:** the site-wide Activity modal is narrower than its table, so
+the Change column is cut off behind a horizontal scroll; the Members modal on Territories pushes
+its Remove buttons against the modal's right edge. My territories shows a locked role by handle
+(`reviewer`) and a held one by title (`Editor`). A fresh `statamic/statamic` skeleton now
+resolves `statamic/cms` 6.38.0, outside the pinned range, so a buyer must downgrade core to
+install.
+
+**Before going public:** the history carries the owner's personal email address in 44 commits'
+author field and in old versions of SECURITY.md, README.md and PROGRESS.md.

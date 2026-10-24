@@ -11,3 +11,6 @@
 # Created (and normally removed) by the recon probes
 /recon/fixtures/
 /.phpunit.result.cache
+
+# Browser automation output
+/.playwright-mcp/

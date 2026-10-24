@@ -18,6 +18,21 @@ site visitors, and it does not restrict the REST or GraphQL APIs, which have no
 user to restrict. The two sections below say exactly what is and is not
 covered; `LICENSE.md` says the same in plain words.
 
+## Screenshots
+
+A site administrator shapes the territories under **Users → Territories**:
+
+![The Territories screen, listing Cardiology, Cardiac Rehab, Oncology and Pediatrics with their branches and member counts](docs/screenshots/territories.png)
+
+Cardiology's head signs in and sees Cardiology's branch of the page tree, and
+nothing else:
+
+![The Pages tree as Cardiology's admin sees it: Cardiology and its four child pages only](docs/screenshots/department-tree.png)
+
+and manages Cardiology's people from **Users → My territories**:
+
+![The My territories screen, with Cardiology's members, their levels and roles, and Add member, Rename and Activity buttons](docs/screenshots/my-territories.png)
+
 ## Installation
 
 ```
@@ -106,6 +121,17 @@ named reason and recorded in the audit log: they cannot grant a role they do
 not hold, act on a territory they do not administer, touch a super user,
 manage roles, widen their own territory, or see users outside it.
 
+Adding a member is what brings someone inside, so it is worth knowing what a
+territory admin can add. They type an email address or a group handle, and can
+add any user on the site who is not a super user, or any group. Once added,
+that person appears on the admin's screen with their name and email address; a
+group brings in every one of its members. Typing an address also tells the
+admin whether it belongs to an account on the site, because an unknown address
+is refused. A member who also belongs to another territory is shown locked:
+the admin cannot change their roles or details. If that is more than a
+department head should have, assign members yourself from **Territories** and
+give nobody the admin level.
+
 ## What Delegated does not cover
 
 Stated plainly, because a security product that is vague about its edges is
@@ -159,7 +185,7 @@ for saying so than for pretending otherwise.
 
 Everyone else — every territory member and territory admin, whatever roles they
 hold — is confined to their territories on every control-panel surface listed
-in `PROGRESS.md`'s inventory.
+under [What Delegated covers](#what-delegated-covers).
 
 ## Requirements
 

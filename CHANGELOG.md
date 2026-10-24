@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.1 — 2026-10-23
+
+No change to what Delegated restricts or how. Upgrading needs no migration and
+leaves territories, assignments and the audit log as they are.
+
+- Verified against Statamic 6.33.0; the constraint now allows 6.31, 6.32 and
+  6.33 (`>=6.31.0 <6.34.0`).
+- The Composer download no longer carries the test suite, the reconnaissance
+  probes, the front-end source or development notes. The compiled control-panel
+  assets are still included.
+- README: screenshots, and a plain statement of whom a territory admin can add
+  as a member and what adding them reveals.
+
 ## 1.0.0 — 2026-09-14
 
 First release. Verified against Statamic 6.31.0 and 6.32.0 on PHP 8.3 and 8.4,
