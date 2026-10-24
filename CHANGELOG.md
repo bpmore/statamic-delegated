@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.2 — 2026-10-23
+
+No change to what Delegated restricts or how. Upgrading needs no migration and
+leaves territories, assignments and the audit log as they are.
+
+- Verified against Statamic 6.34, 6.35, 6.36, 6.37 and 6.38; the constraint now
+  allows 6.31 to 6.38 (`>=6.31.0 <6.39.0`). A new site, which installs the
+  newest Statamic, can now `composer require` Delegated without downgrading.
+- Control-panel assets rebuilt against 6.38. The only difference is one name
+  added to Statamic's UI kit in 6.36; Delegated does not use it, and the
+  bundle works on every minor in the range.
+
 ## 1.0.1 — 2026-10-23
 
 No change to what Delegated restricts or how. Upgrading needs no migration and

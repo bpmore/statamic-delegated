@@ -1290,3 +1290,35 @@ tree at `main` byte-identical. The old private repo is renamed `bpmore/statamic-
 Private vulnerability reporting enabled; releases v1.0.0 and v1.0.1 created from the changelog;
 the tag zipball carries no dev files; CI green on 6.31 to 6.33 and the advisory newest-6.x job.
 Packagist submission is the owner's.
+
+### Statamic 6.34 to 6.38 (2026-10-23)
+
+Trigger: a fresh `statamic/statamic` site resolves 6.38.0, and `composer require
+bpmore/statamic-delegated` failed there (pin `<6.34.0`). DECISIONS.md steps 1 to 5, per minor:
+
+1. `composer require "statamic/cms:~6.NN.0" -W` then the suite: **398 pass** on 6.34.1, 6.35.1,
+   6.36.0, 6.37.0, 6.38.0 (PHP 8.4, both drivers).
+2. Bundle rebuilt on 6.38.0: **differs**. Cause, checked: the externalised `__STATAMIC__.ui`
+   destructure gained one name, `AutocompleteEditor` (new in 6.36); 162 names before, 163 after,
+   none removed; the rest is minifier renaming. Delegated does not use it; on 6.31 to 6.35 it
+   destructures to `undefined`, harmlessly. New bundle committed. Clicked through on a fresh
+   site, Playwright, on 6.33.0 and on 6.38.0 with the new bundle: Territories (list, members
+   modal, site Activity, New territory form), My territories as a territory admin (cards,
+   members, Activity, Add member form), the pruned Pages tree; out-of-territory edit URL
+   redirects. No console errors from Delegated (core's passkey script errors on a bare-IP host).
+3. Inventory probe on each minor: **all 61 lines identical to 6.33.0** with generated UUIDs
+   masked. `src/` diffs read for every minor (and the 6.34.1/6.35.1 patches) under the listed
+   folders. Relevant, none changing an enforcement point:
+   - 6.35 `CollectionTreeController::index` attaches `actions` to the root page. The prune's
+     `redact()` rebuilds an outside page from a key whitelist, so they are dropped there.
+   - 6.36 `EntryQueryBuilder::forNestedWhere()` rewrites `where('collection')` inside nested
+     groups to `collectionHandle`. TerritoryScope already names the column per builder.
+   - 6.37 `getKeysFromCollectionsById` fast path for `where('id', '=')`: same results.
+   - 6.36 `Users` fieldtype "Current User" option; `UsersController` email rule. No new reach.
+   - 6.38 live preview on *create* takes a `parent` and previews the unsaved entry at that
+     parent's URI. It renders only the user's own unsaved values; the parent's URI is no more
+     than the pruned tree already shows. Not added to `GuardsEntryCreation`: older minors send
+     no `parent`, so the guard would read every preview as a root creation and refuse it.
+   - 6.34 asset container actions route: assets are out of scope.
+5. Matrix 6.31 to 6.38, pin `>=6.31.0 <6.39.0`, lock at 6.38.0 (`-W` moved 58 transitive
+   packages, the same set the per-minor runs used), DECISIONS.md rows, README, CHANGELOG 1.0.2.

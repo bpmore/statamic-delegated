@@ -16,8 +16,13 @@ minor is verified before the range in `composer.json` is widened to include it.
 | 6.31.0 | 2026-09-11 → 12 | 8.3, 8.4 | built and passed against it throughout | yes | run against it (`recon/`, PROGRESS.md Phase 0.1) |
 | 6.32.0 | 2026-09-12, inventory 2026-09-14 | 8.4 locally; CI 8.3, 8.4 | 398 pass | reproduces the committed bundle byte for byte | re-run from this repo: every surface answers as on 6.31.0 (PROGRESS.md Phase 5.4) |
 | 6.33.0 | 2026-09-19 | 8.4 locally; CI leg added for 8.3, 8.4 | 398 pass | reproduces the committed bundle byte for byte | re-run from this repo: all 61 lines identical to the 6.32.0 run (PROGRESS.md, Statamic 6.33.0) |
+| 6.34.1 | 2026-10-23 | 8.4 locally; CI leg added for 8.3, 8.4 | 398 pass | covered by the 6.38.0 rebuild | re-run from this repo: all 61 lines identical to the 6.33.0 run, generated ids masked (PROGRESS.md, Statamic 6.34 to 6.38) |
+| 6.35.1 | 2026-10-23 | 8.4 locally; CI leg added for 8.3, 8.4 | 398 pass | covered by the 6.38.0 rebuild | re-run from this repo: all 61 lines identical to the 6.33.0 run, generated ids masked (PROGRESS.md, Statamic 6.34 to 6.38) |
+| 6.36.0 | 2026-10-23 | 8.4 locally; CI leg added for 8.3, 8.4 | 398 pass | covered by the 6.38.0 rebuild | re-run from this repo: all 61 lines identical to the 6.33.0 run, generated ids masked (PROGRESS.md, Statamic 6.34 to 6.38) |
+| 6.37.0 | 2026-10-23 | 8.4 locally; CI leg added for 8.3, 8.4 | 398 pass | covered by the 6.38.0 rebuild | re-run from this repo: all 61 lines identical to the 6.33.0 run, generated ids masked (PROGRESS.md, Statamic 6.34 to 6.38) |
+| 6.38.0 | 2026-10-23 | 8.4 locally; CI leg added for 8.3, 8.4 | 398 pass | rebuilt on 6.38.0: differs only by one UI-kit name (`AutocompleteEditor`, new in 6.36) in the bundle's import list; that bundle committed, three screens clicked through on 6.33.0 and 6.38.0 | re-run from this repo: all 61 lines identical to the 6.33.0 run, generated ids masked (PROGRESS.md, Statamic 6.34 to 6.38) |
 
-**Last verified: 6.33.0.** Pin: `>=6.31.0 <6.34.0`.
+**Last verified: 6.38.0.** Pin: `>=6.31.0 <6.39.0`.
 
 ## Re-verification on every Statamic minor
 
