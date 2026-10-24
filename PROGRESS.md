@@ -1282,3 +1282,11 @@ install.
 
 **Before going public:** the history carries the owner's personal email address in 44 commits'
 author field and in old versions of SECURITY.md, README.md and PROGRESS.md.
+
+**Gone public, 2026-10-23.** History rewritten with `git filter-repo` (author, committer and tagger
+email to the GitHub noreply address; the old address in file contents and messages replaced),
+tree at `main` byte-identical. The old private repo is renamed `bpmore/statamic-delegated-private`
+(remote `private`, full original history); the new public `bpmore/statamic-delegated` is `origin`.
+Private vulnerability reporting enabled; releases v1.0.0 and v1.0.1 created from the changelog;
+the tag zipball carries no dev files; CI green on 6.31 to 6.33 and the advisory newest-6.x job.
+Packagist submission is the owner's.
