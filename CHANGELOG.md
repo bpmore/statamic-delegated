@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Verified Statamic 6.39.0 on PHP 8.4 with 398 tests (1,696 assertions),
+  including flat-file and Eloquent access-denial checks.
+- Support now covers Statamic 6.31 through 6.39 (`>=6.31.0 <6.40.0`),
+  with 6.39 added to the PHP 8.3/8.4 CI matrix.
+- No runtime code, asset, migration or territory-data changes.
+
 ## 1.0.2 — 2026-10-23
 
 No change to what Delegated restricts or how. Upgrading needs no migration and

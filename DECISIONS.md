@@ -21,8 +21,9 @@ minor is verified before the range in `composer.json` is widened to include it.
 | 6.36.0 | 2026-10-23 | 8.4 locally; CI leg added for 8.3, 8.4 | 398 pass | covered by the 6.38.0 rebuild | re-run from this repo: all 61 lines identical to the 6.33.0 run, generated ids masked (PROGRESS.md, Statamic 6.34 to 6.38) |
 | 6.37.0 | 2026-10-23 | 8.4 locally; CI leg added for 8.3, 8.4 | 398 pass | covered by the 6.38.0 rebuild | re-run from this repo: all 61 lines identical to the 6.33.0 run, generated ids masked (PROGRESS.md, Statamic 6.34 to 6.38) |
 | 6.38.0 | 2026-10-23 | 8.4 locally; CI leg added for 8.3, 8.4 | 398 pass | rebuilt on 6.38.0: differs only by one UI-kit name (`AutocompleteEditor`, new in 6.36) in the bundle's import list; that bundle committed, three screens clicked through on 6.33.0 and 6.38.0 | re-run from this repo: all 61 lines identical to the 6.33.0 run, generated ids masked (PROGRESS.md, Statamic 6.34 to 6.38) |
+| 6.39.0 | 2026-11-03 | 8.4 locally; CI leg added for 8.3, 8.4 | 398 pass, 1696 assertions, both entry drivers | reproduces the committed bundle byte for byte | all 61 lines identical to 6.38.0 after masking generated UUIDs; Greenhouse click-through completed (PROGRESS.md, Statamic 6.39) |
 
-**Last verified: 6.38.0.** Pin: `>=6.31.0 <6.39.0`.
+**Last verified: 6.39.0.** Pin: `>=6.31.0 <6.40.0`.
 
 ## Re-verification on every Statamic minor
 

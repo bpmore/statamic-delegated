@@ -1322,3 +1322,36 @@ bpmore/statamic-delegated` failed there (pin `<6.34.0`). DECISIONS.md steps 1 to
    - 6.34 asset container actions route: assets are out of scope.
 5. Matrix 6.31 to 6.38, pin `>=6.31.0 <6.39.0`, lock at 6.38.0 (`-W` moved 58 transitive
    packages, the same set the per-minor runs used), DECISIONS.md rows, README, CHANGELOG 1.0.2.
+
+### Statamic 6.39 (2026-11-03)
+
+Trigger: Greenhouse's update was blocked by the verified-minor cap. Owner
+requested checking and updating Delegated before updating Greenhouse.
+
+- [x] Installed 6.39.0 with all dependencies, full Pest suite: **398 pass,
+  1696 assertions**, PHP 8.4.27, flat-file and Eloquent drivers. No enforcement
+  changes were needed.
+- [x] `npm run build` reproduces the committed bundle byte for byte.
+- [x] Core-only inventory on 6.38 and 6.39: all **61 lines identical** after
+  masking generated UUIDs. The inventory intentionally logs observations with
+  no assertions; PHPUnit's 12 risky-test notices are expected for this probe.
+- [x] Reviewed core source differences. In the enforcement-adjacent paths,
+  LocalizeEntryController gains a root/site-keyed lock and reuses an existing
+  localization, but still authorizes `edit` before that work. Asset-conflict
+  responses and deferred image-cache stats are outside entry enforcement.
+  UpdateSearchController now finds existing indexes; Comb adds locking,
+  batched writes, query caching and escaped boolean terms. No changes under
+  Hooks, Policies, Fieldtypes, Structures, Actions, Stache/Query or Query.
+  User augmentation excludes 2FA fields; avatar handling supports query results.
+- [x] Installed a mirrored local copy into Greenhouse with Statamic 6.39.0.
+  Browser checks as the existing super user: Territories, My territories,
+  site-wide Activity and per-territory Activity all render with the existing
+  demo records. No browser console errors recorded on those screens.
+- [x] Added 6.39 to both PHP CI legs, widened the pin to `<6.40.0`, updated
+  README, CLAUDE, changelog and DECISIONS. Pint and strict Composer validation
+  pass. PHP 8.3 and the full historical matrix have not been rerun locally;
+  those checks remain for CI when the branch is pushed.
+
+The shared statamic-dev host was not upgraded. Greenhouse uses a non-symlinked
+path repository to this tested local branch; no GitHub branch or release has
+been published by this task.

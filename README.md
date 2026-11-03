@@ -192,7 +192,7 @@ under [What Delegated covers](#what-delegated-covers).
 - PHP 8.3 or later
 - Statamic 6 **Pro** — roles, permissions and more than one user are Pro features, and so
   is everything Delegated does
-- Statamic 6, within the range named in `composer.json` — currently 6.31 to 6.38.
+- Statamic 6, within the range named in `composer.json` — currently 6.31 to 6.39.
   The constraint is deliberately not open-ended: the addon reaches into
   control-panel internals that are not a published interface, so CI runs the
   suite against every minor in the range, and the range is widened only after
