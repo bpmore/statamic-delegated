@@ -1355,3 +1355,11 @@ requested checking and updating Delegated before updating Greenhouse.
 The shared statamic-dev host was not upgraded. Greenhouse uses a non-symlinked
 path repository to this tested local branch; no GitHub branch or release has
 been published by this task.
+
+### Publish compatibility branch (2026-11-03)
+
+Owner requested pushing the completed changes to GitHub. Published
+`compat/statamic-6-39` to the public origin repository. Greenhouse will install
+this branch through Composer VCS instead of requiring a sibling local checkout.
+No runtime source, assets or dependency versions changed in this publishing
+step. No merge or release is included.
