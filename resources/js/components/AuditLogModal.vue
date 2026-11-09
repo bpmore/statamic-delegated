@@ -7,6 +7,10 @@ import { Badge, Button, Description, Modal, Table, TableCell, TableColumn, Table
  * has already decided what the viewer may see and whom it may name, so this
  * only lays the rows out. Refusals are marked; before/after are shown as
  * "key: was → now" lines.
+ *
+ * A territory's name is its admin's own text, and a refusal's message
+ * repeats what the refused request contained. Description renders its
+ * `text` prop with v-html, so both go through its slot, which is text.
  */
 const props = defineProps({
     open: { type: Boolean, required: true },
@@ -88,7 +92,7 @@ const when = (iso) => new Date(iso).toLocaleString();
                             <Badge :text="describe(entry)" size="sm" :color="isRefusal(entry) ? 'red' : 'gray'" />
                             <div class="mt-1">
                                 {{ entry.target.label }}
-                                <Description v-if="entry.territory" :text="`in ${entry.territory.name}`" />
+                                <Description v-if="entry.territory">in {{ entry.territory.name }}</Description>
                             </div>
                         </TableCell>
                         <TableCell class="align-top">
@@ -98,7 +102,7 @@ const when = (iso) => new Date(iso).toLocaleString();
                                 <template v-else-if="c.after !== null">{{ c.after }}</template>
                                 <template v-else>{{ c.before }} (removed)</template>
                             </div>
-                            <Description v-if="isRefusal(entry) && entry.after?.message" :text="entry.after.message" />
+                            <Description v-if="isRefusal(entry) && entry.after?.message">{{ entry.after.message }}</Description>
                         </TableCell>
                     </TableRow>
                 </TableRows>

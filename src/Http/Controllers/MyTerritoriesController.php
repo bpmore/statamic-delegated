@@ -71,7 +71,11 @@ final class MyTerritoriesController extends CpController
         $actor = $this->actor();
         $id = $this->territoryId($territory);
 
-        $data = $request->validate(['name' => ['required', 'string', 'max:128']]);
+        // The same name rule as TerritoryRequest: no markup, whoever is typing.
+        $data = $request->validate(
+            ['name' => ['required', 'string', 'max:128', 'not_regex:/[<>]/']],
+            ['name.not_regex' => 'A name cannot contain < or >.'],
+        );
 
         return $this->attempt(fn () => $this->administration->updateTerritory($actor, $id, ['name' => $data['name']]), $actor);
     }
