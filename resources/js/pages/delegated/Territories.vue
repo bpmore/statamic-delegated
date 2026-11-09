@@ -253,7 +253,8 @@ async function removeMember(assignment) {
             <TableRow v-for="territory in territories" :key="territory.id">
                 <TableCell>
                     <div class="font-medium">{{ territory.name }}</div>
-                    <Description :text="territory.slug" />
+                    <!-- Description's text prop is v-html; the slot is text. -->
+                    <Description>{{ territory.slug }}</Description>
                 </TableCell>
                 <TableCell>{{ siteName(territory.site) }}</TableCell>
                 <TableCell>

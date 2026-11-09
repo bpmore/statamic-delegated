@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+No change to what Delegated restricts or how. Upgrading needs no migration and
+leaves territories, assignments and the audit log as they are.
+
+- Security: the control panel passed territory names, and the message of a
+  refused action, to UI-kit props that render as HTML. A territory admin can
+  rename their territory, and super users read the audit log, so a name
+  written as markup could have run as script in a super user's session. Those
+  values are now rendered as text; a territory name can no longer contain `<`
+  or `>`; and a validation message that repeats a name or a scope reference
+  escapes it first. Names already stored are shown as text and left as they
+  are.
+
 ## 1.0.2 — 2026-10-23
 
 No change to what Delegated restricts or how. Upgrading needs no migration and

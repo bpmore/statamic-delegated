@@ -42,7 +42,10 @@ final class TerritoryRequest extends FormRequest
         $site = (string) $this->input('site');
 
         return [
-            'name' => ['required', 'string', 'max:128'],
+            // No markup in a name: the control panel shows names as text, but
+            // a name is repeated in places this addon does not render, and
+            // nothing a department is called needs an angle bracket.
+            'name' => ['required', 'string', 'max:128', 'not_regex:/[<>]/'],
             'slug' => [
                 'required', 'string', 'max:128', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
                 Rule::unique('delegated_territories', 'slug')->where('site', $site)->ignore($id),
@@ -52,6 +55,12 @@ final class TerritoryRequest extends FormRequest
             'scope_ref' => ['required', 'string', 'max:512'],
             'parent_id' => ['nullable', 'integer', Rule::exists('delegated_territories', 'id')],
         ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return ['name.not_regex' => 'A name cannot contain < or >.'];
     }
 
     protected function prepareForValidation(): void
@@ -78,6 +87,10 @@ final class TerritoryRequest extends FormRequest
         });
     }
 
+    // The messages below repeat what was submitted, or what another territory
+    // is called. The control panel's Field component renders a validation
+    // message with v-html, so anything repeated in one is escaped first.
+
     private function validateScopeRef(Validator $v): void
     {
         $type = ScopeType::from((string) $this->input('scope_type'));
@@ -85,8 +98,8 @@ final class TerritoryRequest extends FormRequest
 
         match ($type) {
             ScopeType::StructureBranch => str_starts_with($ref, '/') || $v->errors()->add('scope_ref', 'A branch is a URI starting with /.'),
-            ScopeType::Collection => Collection::findByHandle($ref) !== null || $v->errors()->add('scope_ref', "There is no collection [{$ref}]."),
-            ScopeType::TaxonomyTerm => $this->termExists($ref) || $v->errors()->add('scope_ref', "A term is written taxonomy::slug, and [{$ref}] is not a term that exists."),
+            ScopeType::Collection => Collection::findByHandle($ref) !== null || $v->errors()->add('scope_ref', 'There is no collection ['.e($ref).'].'),
+            ScopeType::TaxonomyTerm => $this->termExists($ref) || $v->errors()->add('scope_ref', 'A term is written taxonomy::slug, and ['.e($ref).'] is not a term that exists.'),
         };
     }
 
@@ -111,7 +124,7 @@ final class TerritoryRequest extends FormRequest
                 && $territory->site === $this->input('site')
                 && $territory->scopeType->value === $this->input('scope_type')
                 && $territory->scopeRef === $this->input('scope_ref')) {
-                $v->errors()->add('scope_ref', "Territory [{$territory->name}] already covers this scope on this site. Assign more groups to it instead.");
+                $v->errors()->add('scope_ref', 'Territory ['.e($territory->name).'] already covers this scope on this site. Assign more groups to it instead.');
 
                 return;
             }

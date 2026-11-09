@@ -110,6 +110,7 @@ it('validates what the database would otherwise refuse, with a message', functio
         'unknown site' => [['slug' => 'x', 'site' => 'mars', 'scope_ref' => '/x'], 'site'],
         'unknown parent' => [['slug' => 'x', 'scope_ref' => '/x', 'parent_id' => 999], 'parent_id'],
         'bad slug' => [['slug' => 'Not A Slug', 'scope_ref' => '/x'], 'slug'],
+        'markup in the name' => [['slug' => 'x', 'scope_ref' => '/x', 'name' => '<b>Cardiology</b>'], 'name'],
     ];
 
     foreach ($cases as $case => [$payload, $field]) {
@@ -126,6 +127,26 @@ it('validates what the database would otherwise refuse, with a message', functio
     expect(createTerritory('root', ['site' => 'french'])->status())->toBe(201);
 
     expect(DB::table('delegated_territories')->count())->toBe(2);
+});
+
+it('escapes a territory name before repeating it in a validation message', function () {
+    // The control panel's Field component renders a validation message with
+    // v-html, and the name it repeats is whatever that territory's admin
+    // typed — before the name rule existed, or through anything that writes
+    // the table directly.
+    $card = Site::territory('cardiology', '/cardiology');
+    DB::table('delegated_territories')->where('id', $card)->update(['name' => 'Cardiology <img src=x onerror=1>{{ 1+1 }}']);
+
+    $r = createTerritory('root', ['slug' => 'heart', 'scope_ref' => '/cardiology']);
+
+    expect($r->status())->toBe(422)
+        ->and($r->json('errors.scope_ref.0'))->toContain('&lt;img')->not->toContain('<img');
+
+    // The scope reference is the submitter's own text, repeated back.
+    $r = createTerritory('root', ['slug' => 'x', 'scope_type' => 'collection', 'scope_ref' => '<img src=x onerror=1>']);
+
+    expect($r->status())->toBe(422)
+        ->and($r->json('errors.scope_ref.0'))->toContain('&lt;img')->not->toContain('<img');
 });
 
 it('accepts a collection and a term as scopes', function () {

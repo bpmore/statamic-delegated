@@ -10,10 +10,13 @@ import {
     Description,
     Field,
     Header,
+    Heading,
     Input,
     Modal,
     Panel,
+    PanelHeader,
     Select,
+    Subheading,
     Table,
     TableCell,
     TableColumn,
@@ -171,7 +174,18 @@ async function saveRoles() {
     </Text>
 
     <div class="space-y-6">
-        <Panel v-for="territory in territories" :key="territory.id" :heading="territory.name" :subheading="`${territory.scope_type.replace('_', ' ')} · ${territory.scope_ref}`">
+        <!--
+            Panel renders its heading and subheading props with v-html, and the
+            name is whatever the territory's admin typed. The same header, built
+            by hand, so the name and scope are interpolated as text.
+        -->
+        <Panel v-for="territory in territories" :key="territory.id">
+            <PanelHeader class="flex items-center justify-between">
+                <div>
+                    <Heading>{{ territory.name }}</Heading>
+                    <Subheading>{{ territory.scope_type.replace('_', ' ') }} · {{ territory.scope_ref }}</Subheading>
+                </div>
+            </PanelHeader>
             <div class="flex justify-end gap-2 mb-3">
                 <Button text="Activity" variant="ghost" size="sm" icon="history" @click="auditing = territory" />
                 <Button text="Rename" variant="ghost" size="sm" icon="pencil" @click="openRename(territory)" />
@@ -293,7 +307,10 @@ async function saveRoles() {
                     @update:model-value="(on) => toggleRole(roleSelection, role.handle, on)"
                 />
             </div>
-            <Description v-if="editingRoles.member.lockedRoles.length" :text="`Kept as they are, because you do not hold them: ${editingRoles.member.lockedRoles.join(', ')}`" />
+            <!-- Description's text prop is v-html; the slot is text. -->
+            <Description v-if="editingRoles.member.lockedRoles.length">
+                Kept as they are, because you do not hold them: {{ editingRoles.member.lockedRoles.join(', ') }}
+            </Description>
         </div>
         <template #footer>
             <div class="flex justify-end gap-2">
