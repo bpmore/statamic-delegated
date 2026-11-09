@@ -39,10 +39,11 @@ class ServiceProvider extends AddonServiceProvider
         Actions\DuplicateEntry::class,
     ];
 
-    // Replaces Statamic's entries fieldtype under its own handle, so the
-    // relationship picker's query is scoped. See the class.
+    // Replace Statamic's entries and users fieldtypes under their own
+    // handles, so each relationship picker's query is scoped. See the classes.
     protected $fieldtypes = [
         Fieldtypes\Entries::class,
+        Fieldtypes\Users::class,
     ];
 
     // The hidden listing filter that confines the users listing. See the class.
