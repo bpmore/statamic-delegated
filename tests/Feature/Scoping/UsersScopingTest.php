@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
+use Bpmore\StatamicDelegated\Fieldtypes\Users;
 use Bpmore\StatamicDelegated\Tests\Support\AbilityScoping;
 use Bpmore\StatamicDelegated\Tests\Support\Site;
+use Facades\Statamic\Fields\FieldtypeRepository as Fieldtype;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Statamic\Facades\Search;
 use Statamic\Facades\User;
 
 uses(RefreshDatabase::class);
@@ -72,6 +75,21 @@ function listUsers(string $as, array $query = []): array
     return ['ids' => collect($r->json('data'))->pluck('id')->sort()->values()->all(), 'total' => $r->json('meta.total')];
 }
 
+/**
+ * The picker behind a `users` field: the same users by another route and
+ * another query, as the control panel's relationship fieldtype asks for
+ * them.
+ */
+function pickUsers(string $as, array $query = []): array
+{
+    $query = array_merge($query, ['config' => base64_encode(json_encode(['type' => 'users']))]);
+    $r = AbilityScoping::as($as)->getJson('/cp/fieldtypes/relationship?'.http_build_query($query));
+
+    expect($r->status())->toBe(200, 'users picker: '.($r->exception?->getMessage() ?? ''));
+
+    return ['ids' => collect($r->json('data'))->pluck('id')->sort()->values()->all(), 'total' => $r->json('meta.total')];
+}
+
 it('shows a territory admin the users they administer, and themselves', function () {
     ['ids' => $ids, 'total' => $total] = listUsers('head');
 
@@ -107,6 +125,46 @@ it('paginates the confined set', function () {
     expect(count($p1['ids']))->toBe(4)
         ->and(count($p2['ids']))->toBe(2)
         ->and($p1['total'])->toBe(6);
+});
+
+it('replaces the core users fieldtype under the same handle', function () {
+    expect(Fieldtype::find('users'))->toBeInstanceOf(Users::class);
+});
+
+it('offers a territory admin, in the users picker, only the users they administer and themselves', function () {
+    ['ids' => $ids, 'total' => $total] = pickUsers('head');
+
+    expect($ids)->toBe(['direct', 'head', 'in-trials', 'shared', 'staff', 'via-group'])
+        ->and($total)->toBe(6);
+
+    // Unpaginated, as the select and typeahead modes ask.
+    expect(pickUsers('head', ['paginate' => 'false'])['ids'])->toBe(['direct', 'head', 'in-trials', 'shared', 'staff', 'via-group']);
+});
+
+it('offers a plain member only themselves in the users picker', function () {
+    expect(pickUsers('staff')['ids'])->toBe(['staff']);
+});
+
+it('does not confine the users picker for a user administrator in no territory, nor for a super user', function () {
+    $everyone = User::all()->map->id()->sort()->values()->all();
+
+    expect(pickUsers('hr')['ids'])->toBe($everyone)
+        ->and(pickUsers('root')['ids'])->toBe($everyone);
+});
+
+it('scopes the users picker\'s search, with and without a users search index', function () {
+    expect(pickUsers('head', ['search' => 'onc'])['ids'])->toBe([])
+        ->and(pickUsers('head', ['search' => 'direct'])['ids'])->toBe(['direct'])
+        ->and(pickUsers('hr', ['search' => 'onc'])['ids'])->toBe(['onc-only']);
+
+    // With an index called `users`, the core fieldtype searches that instead
+    // of the users query, and the scope has to hold there too.
+    config(['statamic.search.indexes.users' => ['driver' => 'local', 'searchables' => 'users', 'fields' => ['email']]]);
+    Search::index('users')->update();
+
+    expect(pickUsers('head', ['search' => 'onc'])['ids'])->toBe([])
+        ->and(pickUsers('head', ['search' => 'direct'])['ids'])->toBe(['direct'])
+        ->and(pickUsers('hr', ['search' => 'onc'])['ids'])->toBe(['onc-only']);
 });
 
 it('refuses the edit screen for a user the admin cannot see or may not change, by direct URL', function () {

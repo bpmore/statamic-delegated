@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+Upgrading needs no migration and leaves territories, assignments and the
+audit log as they are.
+
+- Security: the picker behind a `users` field (the relationship picker, as a
+  blueprint's users fieldtype opens it) listed every user on the site to
+  anyone with `view users`, confined or not. The users listing itself was
+  confined; the picker reaches the same users by its own route and its own
+  query. It now offers a confined user what the users listing shows them: the
+  users they administer, and themselves, with or without a users search
+  index. Super users and people in no territory see everyone, as before.
+
 ## 1.0.2 — 2026-10-23
 
 No change to what Delegated restricts or how. Upgrading needs no migration and
