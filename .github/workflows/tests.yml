@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         php: ['8.3', '8.4']
-        statamic: ['6.31', '6.32', '6.33', '6.34', '6.35', '6.36', '6.37', '6.38']
+        statamic: ['6.31', '6.32', '6.33', '6.34', '6.35', '6.36', '6.37', '6.38', '6.39', '6.40', '6.41', '6.42', '6.43', '6.44']
 
     steps:
       - uses: actions/checkout@v4
@@ -34,11 +34,10 @@ jobs:
           extensions: dom, curl, libxml, mbstring, zip, pdo_sqlite, sqlite3
           coverage: none
 
-      # `require`, not `install`: the committed lock file pins one minor; each
-      # leg resolves its own within the range composer.json allows. The
-      # constraint is narrowed to the leg's minor, never widened past the pin.
+      # Resolve each leg within the declared range without rewriting the manifest.
+      # Unlock Eloquent too: 5.14 requires Statamic 6.44 or newer.
       - name: Install dependencies at Statamic ${{ matrix.statamic }}
-        run: composer require "statamic/cms:~${{ matrix.statamic }}.0" --with-all-dependencies --prefer-dist --no-interaction --no-progress
+        run: composer update "statamic/cms:~${{ matrix.statamic }}.0" statamic/eloquent-driver --with-all-dependencies --prefer-dist --no-interaction --no-progress
 
       # Building against anything but the leg's minor would be building the
       # wrong thing — and anything but 6.x is a bug in the constraints.
