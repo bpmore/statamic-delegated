@@ -11,6 +11,7 @@ use Bpmore\StatamicDelegated\Audit\AuditLog;
 use Bpmore\StatamicDelegated\Enforcement\ClosesEntryOracles;
 use Bpmore\StatamicDelegated\Enforcement\GuardsEntryAbilities;
 use Bpmore\StatamicDelegated\Enforcement\GuardsEntryCreation;
+use Bpmore\StatamicDelegated\Enforcement\GuardsEntryLocalization;
 use Bpmore\StatamicDelegated\Enforcement\GuardsNavigationTree;
 use Bpmore\StatamicDelegated\Enforcement\GuardsStructureTreeUpdate;
 use Bpmore\StatamicDelegated\Enforcement\GuardsUserAbilities;
@@ -70,6 +71,7 @@ class ServiceProvider extends AddonServiceProvider
     protected $middlewareGroups = [
         'statamic.cp.authenticated' => [
             GuardsEntryCreation::class,
+            GuardsEntryLocalization::class,
             PrunesStructureTree::class,
             GuardsStructureTreeUpdate::class,
             GuardsNavigationTree::class,
