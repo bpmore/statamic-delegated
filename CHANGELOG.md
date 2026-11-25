@@ -1,25 +1,14 @@
 # Changelog
 
-## Unreleased
+## 1.0.3 — 2026-11-25
 
 Upgrading needs no migration and leaves territories, assignments and the
 audit log as they are.
 
-- Security: the control panel passed territory names, and the message of a
-  refused action, to UI-kit props that render as HTML. A territory admin can
-  rename their territory, and super users read the audit log, so a name
-  written as markup could have run as script in a super user's session. Those
-  values are now rendered as text; a territory name can no longer contain `<`
-  or `>`; and a validation message that repeats a name or a scope reference
-  escapes it first. Names already stored are shown as text and left as they
-  are.
-- Security: the picker behind a `users` field (the relationship picker, as a
-  blueprint's users fieldtype opens it) listed every user on the site to
-  anyone with `view users`, confined or not. The users listing itself was
-  confined; the picker reaches the same users by its own route and its own
-  query. It now offers a confined user what the users listing shows them: the
-  users they administer, and themselves, with or without a users search
-  index. Super users and people in no territory see everyone, as before.
+- Adds compatibility with Statamic 6.39 through 6.44. The supported Composer
+  range is now `>=6.31.0 <6.45.0`.
+- Improves how territory permissions are enforced across the control panel.
+- Rebuilds the control-panel assets against Statamic 6.44.0.
 
 ## 1.0.2 — 2026-10-23
 

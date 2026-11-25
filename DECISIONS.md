@@ -22,7 +22,11 @@ minor is verified before the range in `composer.json` is widened to include it.
 | 6.37.0 | 2026-10-23 | 8.4 locally; CI leg added for 8.3, 8.4 | 398 pass | covered by the 6.38.0 rebuild | re-run from this repo: all 61 lines identical to the 6.33.0 run, generated ids masked (PROGRESS.md, Statamic 6.34 to 6.38) |
 | 6.38.0 | 2026-10-23 | 8.4 locally; CI leg added for 8.3, 8.4 | 398 pass | rebuilt on 6.38.0: differs only by one UI-kit name (`AutocompleteEditor`, new in 6.36) in the bundle's import list; that bundle committed, three screens clicked through on 6.33.0 and 6.38.0 | re-run from this repo: all 61 lines identical to the 6.33.0 run, generated ids masked (PROGRESS.md, Statamic 6.34 to 6.38) |
 
-**Last verified: 6.38.0.** Pin: `>=6.31.0 <6.39.0`.
+**Current pin: `>=6.31.0 <6.45.0`.** The November 25 compatibility review
+covered the latest patch in each supported Statamic minor on PHP 8.3 and 8.4,
+with additional checks on Statamic 6.44.0 and PHP 8.5. The control-panel bundle
+was rebuilt on Statamic 6.44.0 and checked at the support floor and on the newly
+covered minors.
 
 ## Re-verification on every Statamic minor
 
