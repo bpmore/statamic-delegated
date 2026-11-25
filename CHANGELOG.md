@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-No change to what Delegated restricts or how. Upgrading needs no migration and
-leaves territories, assignments and the audit log as they are.
+Upgrading needs no migration and leaves territories, assignments and the
+audit log as they are.
 
 - Security: the control panel passed territory names, and the message of a
   refused action, to UI-kit props that render as HTML. A territory admin can
@@ -13,6 +13,13 @@ leaves territories, assignments and the audit log as they are.
   or `>`; and a validation message that repeats a name or a scope reference
   escapes it first. Names already stored are shown as text and left as they
   are.
+- Security: the picker behind a `users` field (the relationship picker, as a
+  blueprint's users fieldtype opens it) listed every user on the site to
+  anyone with `view users`, confined or not. The users listing itself was
+  confined; the picker reaches the same users by its own route and its own
+  query. It now offers a confined user what the users listing shows them: the
+  users they administer, and themselves, with or without a users search
+  index. Super users and people in no territory see everyone, as before.
 
 ## 1.0.2 — 2026-10-23
 
