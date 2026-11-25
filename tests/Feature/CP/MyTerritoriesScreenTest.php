@@ -190,6 +190,16 @@ it('lets the admin rename their territory and nothing else about it', function (
     expect(AbilityScoping::as('head')->patchJson("/cp/delegated/my-territories/{$this->oncology}", ['name' => 'Mine'])->status())->toBe(403);
 });
 
+it('refuses a name with markup in it', function () {
+    // The name is shown to super users in the audit log; it is text, never
+    // markup, whatever the component rendering it would accept.
+    $r = AbilityScoping::as('head')->patchJson("/cp/delegated/my-territories/{$this->cardiology}", ['name' => 'Cardiology <img src=x onerror=1>']);
+
+    expect($r->status())->toBe(422)
+        ->and($r->json('errors.name.0'))->toBe('A name cannot contain < or >.')
+        ->and(DB::table('delegated_territories')->find($this->cardiology)->name)->toBe('Cardiology');
+});
+
 it('shows a super user every territory', function () {
     expect(collect(myTerritories('root')->json('territories'))->pluck('id')->all())
         ->toEqualCanonicalizing([$this->cardiology, $this->trials, $this->oncology]);

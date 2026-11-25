@@ -36,3 +36,27 @@ it('has a territory core to keep pure', function () {
     // files and nothing to fail on.
     expect(phpSources(['src/Territories']))->not->toBeEmpty();
 });
+
+// The control panel's UI kit renders some props with v-html: `text` on
+// Description, Subheading and ErrorMessage; `heading` and `subheading` on
+// Panel and CardPanel, and so on the empty-state components built from them.
+// Whatever is bound there is markup, and a territory admin writes territory
+// names. Dynamic text goes in the component's default slot, where {{ }}
+// interpolates it; a constant string in the prop is fine, and is not bound.
+// There is no JavaScript test runner here, so the templates are read as text.
+it('keeps bound values out of the UI kit props that render as HTML', function (string $file) {
+    $components = 'Description|Subheading|ErrorMessage|Panel|CardPanel|EmptyStateItem|EmptyStateMenu';
+    $attributes = '(?:"[^"]*"|\'[^\']*\'|[^>"\'])*?'; // the rest of the tag, quotes respected
+
+    preg_match_all(
+        "/<(?:ui-)?(?:{$components})\\b{$attributes}\\s(?::|v-bind:)(?:text|heading|subheading)=/",
+        (string) file_get_contents($file),
+        $matches,
+    );
+
+    expect($matches[0])->toBe([]);
+})->with(sources(['resources/js'], 'vue'));
+
+it('has control panel templates to keep clean', function () {
+    expect(sources(['resources/js'], 'vue'))->not->toBeEmpty();
+});

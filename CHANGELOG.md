@@ -5,6 +5,14 @@
 Upgrading needs no migration and leaves territories, assignments and the
 audit log as they are.
 
+- Security: the control panel passed territory names, and the message of a
+  refused action, to UI-kit props that render as HTML. A territory admin can
+  rename their territory, and super users read the audit log, so a name
+  written as markup could have run as script in a super user's session. Those
+  values are now rendered as text; a territory name can no longer contain `<`
+  or `>`; and a validation message that repeats a name or a scope reference
+  escapes it first. Names already stored are shown as text and left as they
+  are.
 - Security: the picker behind a `users` field (the relationship picker, as a
   blueprint's users fieldtype opens it) listed every user on the site to
   anyone with `view users`, confined or not. The users listing itself was

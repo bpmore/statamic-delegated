@@ -39,13 +39,25 @@ function repoPath(string $relative = ''): string
  */
 function phpSources(array $directories): array
 {
+    return sources($directories, 'php');
+}
+
+/**
+ * Files with the given extension under the given directories, keyed as
+ * phpSources() keys them.
+ *
+ * @param  list<string>  $directories
+ * @return array<string, string>
+ */
+function sources(array $directories, string $extension): array
+{
     $root = dirname(__DIR__);
     $files = [];
 
     foreach ($directories as $directory) {
         $iterator = new RecursiveDirectoryIterator($root.'/'.$directory, FilesystemIterator::SKIP_DOTS);
         foreach (new RecursiveIteratorIterator($iterator) as $file) {
-            if ($file->getExtension() !== 'php') {
+            if ($file->getExtension() !== $extension) {
                 continue;
             }
             $files[substr($file->getPathname(), strlen($root) + 1)] = $file->getPathname();
